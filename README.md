@@ -97,6 +97,19 @@ export VLLM_ATTENTION_BACKEND=XFORMERS
 bash ./scripts/train_tiny_zero.sh
 ```
 
+## Reasoning-Gym Datasets
+
+**Data Preparation**
+```
+conda activate zero
+python ./examples/data_preprocess/reasoning-gym/reasoning-gym.py \
+--local_dir {path_to_your_dataset} \
+--dataset_name {dataset_name} \
+--train_size {size_of_training} \
+--val_size {size_of_validation} \
+--seed {set_seed}
+```
+
 ## Acknowledge
 * We run our experiments based on [veRL](https://github.com/volcengine/verl).
 * We use Qwen2.5 series base model [Qwen2.5](https://github.com/QwenLM/Qwen2.5).
