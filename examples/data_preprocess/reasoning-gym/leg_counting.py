@@ -23,28 +23,27 @@ import reasoning_gym
 
 
 def make_prefix(dp, template_type):
-    target = dp['target']
-    numbers = dp['nums']
+    question = dp['question']
     # NOTE: also need to change reward_score/countdown.py
     if template_type == 'base':
         """This works for any base model"""
         prefix = f"""A conversation between User and Assistant. The user asks a question, and the Assistant solves it. The assistant first thinks about the reasoning process in the mind and then provides the user with the answer.
-User: Using the numbers {numbers}, create an equation that equals {target}. You can use basic arithmetic operations (+, -, *, /) and each number can only be used once. Show your work in <think> </think> tags. And return the final answer in <answer> </answer> tags, for example <answer> (1 + 2) / 3 </answer>.
+User: {question} Show your work in <think> </think> tags. And return only the final numeric answer in <answer> </answer> tags, for example <answer> 5 </answer>.
 Assistant: Let me solve this step by step.
 <think>"""
     elif template_type == 'qwen-instruct':
         """This works for Qwen Instruct Models"""
-        prefix = f"""<|im_start|>system\nYou are a helpful assistant. You first thinks about the reasoning process in the mind and then provides the user with the answer.<|im_end|>\n<|im_start|>user\n Using the numbers {numbers}, create an equation that equals {target}. You can use basic arithmetic operations (+, -, *, /) and each number can only be used once. Show your work in <think> </think> tags. And return the final answer in <answer> </answer> tags, for example <answer> (1 + 2) / 3 </answer>.<|im_end|>\n<|im_start|>assistant\nLet me solve this step by step.\n<think>"""
+        prefix = f"""<|im_start|>system\nYou are a helpful assistant. You first thinks about the reasoning process in the mind and then provides the user with the answer.<|im_end|>\n<|im_start|>user\n{question}. Show your work in <think> </think> tags. And return only the final numeric answer in <answer> </answer> tags, for example <answer> 5 </answer>.<|im_end|>\n<|im_start|>assistant\nLet me solve this step by step.\n<think>"""
     return prefix
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset_name', default='leg_counting')
     parser.add_argument('--local_dir', default='~/data/leg_counting')
     parser.add_argument('--hdfs_dir', default=None)
-    parser.add_argument('--train_size', type=int, default=10)
-    parser.add_argument('--val_size', type=int, default=5)
+    parser.add_argument('--train_size', type=int, default=327680)
+    parser.add_argument('--val_size', type=int, default=1024)
     parser.add_argument('--seed', default=42)
+    parser.add_argument('--template_type', type=str, default='base')
     args = parser.parse_args()
 
     train_dataset = reasoning_gym.create_dataset(args.dataset_name, size=args.train_size, seed=args.seed)
@@ -54,7 +53,7 @@ if __name__ == '__main__':
     # Function to process each example into the desired format
     def make_map_fn(split):
         def process_fn(example, idx):
-            question = example['question']
+            question = make_prefix(example, template_type=args.template_type)
             solution = example['answer']
             data = {
                 "data_source": args.dataset_name,
