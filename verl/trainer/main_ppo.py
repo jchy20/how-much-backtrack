@@ -28,8 +28,10 @@ def _select_rm_score_fn(data_source):
         return math.compute_score
     elif data_source == 'leg_counting':
         return leg_counting.compute_score
-    elif data_source == 'advanced_geometry/incircle_radius':
-        return advanced_geometry.compute_score_incircle_radius
+    elif data_source == 'advanced_geometry/incircle_radius' or data_source == 'advanced_geometry/angle_measure':
+        return advanced_geometry.compute_score
+    elif data_source == 'advanced_geometry/orthocenter':
+        return advanced_geometry.compute_score_orthocenter
     elif "multiply" in data_source or "arithmetic" in data_source:
         return multiply.compute_score
     elif "countdown" in data_source:
