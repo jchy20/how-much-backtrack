@@ -75,7 +75,7 @@ if __name__ == '__main__':
             question = make_prefix(example, template_type=args.template_type, task_type=args.task_type)
             solution = example['answer']
             data = {
-                "data_source": args.dataset_name,
+                "data_source": f"{args.dataset_name}/{args.task_type}",
                 "prompt": [{
                     "role": "user",
                     "content": question,

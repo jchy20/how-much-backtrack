@@ -102,13 +102,15 @@ bash ./scripts/train_tiny_zero.sh
 **Data Preparation**
 ```
 conda activate zero
-python ./examples/data_preprocess/reasoning-gym/reasoning-gym.py \
+python ./examples/data_preprocess/reasoning-gym/{task_name}.py \
 --local_dir {path_to_your_dataset} \
 --dataset_name {dataset_name} \
 --train_size {size_of_training} \
 --val_size {size_of_validation} \
+--task_types {task_types} \
 --seed {set_seed}
 ```
+Currently supports tasks __Leg-Counting__, __Advanced-Geometry__
 
 ## Acknowledge
 * We run our experiments based on [veRL](https://github.com/volcengine/verl).
