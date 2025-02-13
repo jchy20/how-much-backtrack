@@ -73,11 +73,11 @@ def compute_score(solution_str, ground_truth, method='strict', format_score=0., 
     else:
         if answer == ground_truth:
             if do_print:
-                print("Correct answer")
+                print(f"Correct answer, score: {score}")
             return score
         else:
             if do_print:
-                print("Incorrect answer")
+                print(f"Incorrect answer, score: {format_score}")
             return format_score
 
 def compute_score_orthocenter(solution_str, ground_truth, method='strict', format_score=0., score=1.):
@@ -105,8 +105,8 @@ def compute_score_orthocenter(solution_str, ground_truth, method='strict', forma
             return 0
         elif answer_num1 == ground_truth_num1 and answer_num2 == ground_truth_num2:
             if do_print:
-                print("Correct answer")
+                print(f"Correct answer, score: {score}")
             return score
         else:
             if do_print:
-                print("Incorrect answer")
+                print(f"Incorrect answer, score: {format_score}")
