@@ -110,3 +110,4 @@ def compute_score_orthocenter(solution_str, ground_truth, method='strict', forma
         else:
             if do_print:
                 print(f"Incorrect answer, score: {format_score}")
+            return format_score
