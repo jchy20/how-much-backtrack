@@ -33,7 +33,7 @@ python ./examples/data_preprocess/reasoning-gym/{task_name}.py \
 --task_types {task_types} \
 --seed {set_seed}
 ```
-Currently supports tasks __Leg-Counting__, __Advanced-Geometry__, __Arc_1d__
+Currently supports tasks __Leg-Counting__, __Advanced-Geometry__, __Arc-1d__, __Base-Conversion__, __Caesar-Cipher__
 
 ## Acknowledge
 * We run our experiments based on [veRL](https://github.com/volcengine/verl).

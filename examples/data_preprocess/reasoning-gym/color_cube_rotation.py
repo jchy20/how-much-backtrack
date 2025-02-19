@@ -28,29 +28,29 @@ def make_prefix(dp, template_type):
     if template_type == 'base':
         """This works for any base model"""
         prefix = f"""A conversation between User and Assistant. The user asks a question, and the Assistant solves it. The assistant first thinks about the reasoning process in the mind and then provides the user with the answer.
-User: {question} Show your work in <think> </think> tags. And return only the final answer in <answer> </answer> tags, for example <answer> 201100 </answer>.
+User: {question} Show your work in <think> </think> tags. Return the final color in all lowercase in <answer> </answer> tags, for example <answer> red </answer>.
 Assistant: Let me solve this step by step.
 <think>"""
 
     elif template_type == 'qwen-instruct':
         """This works for Qwen Instruct Models"""
-        prefix = f"""<|im_start|>system\nYou are a helpful assistant. You first thinks about the reasoning process in the mind and then provides the user with the answer.<|im_end|>\n<|im_start|>user\n{question} Show your work in <think> </think> tags. And return only the final answer in <answer> </answer> tags, for example <answer> 201100 </answer>.<|im_end|>\n<|im_start|>assistant\nLet me solve this step by step.\n<think>"""
-    return prefix   
+        prefix = f"""<|im_start|>system\nYou are a helpful assistant. You first thinks about the reasoning process in the mind and then provides the user with the answer.<|im_end|>\n<|im_start|>user\n{question} Show your work in <think> </think> tags. Return the final color in all lowercase in <answer> </answer> tags, for example <answer> red </answer>.<|im_end|>\n<|im_start|>assistant\nLet me solve this step by step.\n<think>"""
+    return prefix
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--local_dir', default='~/data/base_conversion')
+    parser.add_argument('--local_dir', default='~/data/color_cube_rotation')
     parser.add_argument('--hdfs_dir', default=None)
     parser.add_argument('--train_size', type=int, default=327680)
     parser.add_argument('--val_size', type=int, default=1024)
-    parser.add_argument('--min_base', type=int, default=0)
-    parser.add_argument('--max_base', type=int, default=16)
+    parser.add_argument('--min_rotations', type=int, default=1)
+    parser.add_argument('--max_rotations', type=int, default=3)
     parser.add_argument('--seed', default=42)
     parser.add_argument('--template_type', type=str, default='base')
     args = parser.parse_args()
 
-    train_dataset = reasoning_gym.create_dataset('base_conversion', size=args.train_size, seed=args.seed, min_base=args.min_base, max_base=args.max_base)
-    val_dataset = reasoning_gym.create_dataset('base_conversion', size=args.val_size, seed=args.seed, min_base=args.min_base, max_base=args.max_base)
+    train_dataset = reasoning_gym.create_dataset('color_cube_rotation', size=args.train_size, seed=args.seed, min_rotations=args.min_rotations, max_rotations=args.max_rotations)
+    val_dataset = reasoning_gym.create_dataset('color_cube_rotation', size=args.val_size, seed=args.seed, min_rotations=args.min_rotations, max_rotations=args.max_rotations)
 
 
     # Function to process each example into the desired format
@@ -60,7 +60,7 @@ if __name__ == '__main__':
             solution = example['answer']
 
             data = {
-                "data_source": "base_conversion",
+                "data_source": "color_cube_rotation",
                 "prompt": [{
                     "role": "user",
                     "content": question,

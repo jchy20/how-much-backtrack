@@ -28,7 +28,7 @@ def make_prefix(dp, template_type):
     if template_type == 'base':
         """This works for any base model"""
         prefix = f"""A conversation between User and Assistant. The user asks a question, and the Assistant solves it. The assistant first thinks about the reasoning process in the mind and then provides the user with the answer.
-User: {question} Show your work in <think> </think> tags. And return only the final answer in <answer> </answer> tags, for example <answer> 201100 </answer>.
+User: {question} Show your work in <think> </think> tags. Return the decrypted message in all capitalized letters inside <answer> </answer> tags, for example <answer> IF YOUR STOMACH IS OUT OF IT MUST BE MENDED </answer>.
 Assistant: Let me solve this step by step.
 <think>"""
 
@@ -39,18 +39,20 @@ Assistant: Let me solve this step by step.
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--local_dir', default='~/data/base_conversion')
+    parser.add_argument('--local_dir', default='~/data/caesar_cipher')
     parser.add_argument('--hdfs_dir', default=None)
     parser.add_argument('--train_size', type=int, default=327680)
     parser.add_argument('--val_size', type=int, default=1024)
-    parser.add_argument('--min_base', type=int, default=0)
-    parser.add_argument('--max_base', type=int, default=16)
+    parser.add_argument('--min_words', type=int, default=3)
+    parser.add_argument('--max_words', type=int, default=16)
+    parser.add_argument('--min_rotation', type=int, default=1)
+    parser.add_argument('--max_rotation', type=int, default=25)
     parser.add_argument('--seed', default=42)
     parser.add_argument('--template_type', type=str, default='base')
     args = parser.parse_args()
 
-    train_dataset = reasoning_gym.create_dataset('base_conversion', size=args.train_size, seed=args.seed, min_base=args.min_base, max_base=args.max_base)
-    val_dataset = reasoning_gym.create_dataset('base_conversion', size=args.val_size, seed=args.seed, min_base=args.min_base, max_base=args.max_base)
+    train_dataset = reasoning_gym.create_dataset('caesar_cipher', size=args.train_size, seed=args.seed, min_words=args.min_words, max_words=args.max_words, min_rotation=args.min_rotation, max_rotation=args.max_rotation)
+    val_dataset = reasoning_gym.create_dataset('caesar_cipher', size=args.val_size, seed=args.seed, min_words=args.min_words, max_words=args.max_words, min_rotation=args.min_rotation, max_rotation=args.max_rotation)
 
 
     # Function to process each example into the desired format
@@ -60,7 +62,7 @@ if __name__ == '__main__':
             solution = example['answer']
 
             data = {
-                "data_source": "base_conversion",
+                "data_source": "caesar_cipher",
                 "prompt": [{
                     "role": "user",
                     "content": question,

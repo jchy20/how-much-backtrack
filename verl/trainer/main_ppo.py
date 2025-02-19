@@ -17,7 +17,7 @@ Note that we don't combine the main with ray_trainer as ray_trainer is used by o
 
 from verl import DataProto
 import torch
-from verl.utils.reward_score import gsm8k, math, multiply, countdown, leg_counting, advanced_geometry, arc_1d, base_conversion
+from verl.utils.reward_score import gsm8k, math, multiply, countdown, leg_counting, advanced_geometry, arc_1d, base_conversion, caesar_cipher
 from verl.trainer.ppo.ray_trainer import RayPPOTrainer
 
 
@@ -36,6 +36,8 @@ def _select_rm_score_fn(data_source):
         return arc_1d.compute_score
     elif data_source == 'base_conversion':
         return base_conversion.compute_score
+    elif data_source == 'caesar_cipher':
+        return caesar_cipher.compute_score
     elif "multiply" in data_source or "arithmetic" in data_source:
         return multiply.compute_score
     elif "countdown" in data_source:
