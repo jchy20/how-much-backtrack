@@ -1,7 +1,8 @@
 from openai import OpenAI
 import pandas as pd
 import argparse
-from verl.utils.reward_score import gsm8k, math, multiply, countdown, leg_counting, advanced_geometry, arc_1d, base_conversion, caesar_cipher
+from verl.utils.reward_score import gsm8k, math, multiply, countdown, leg_counting, advanced_geometry, arc_1d, sudoku, color_cube_rotation, zebra_puzzles, list_functions, self_reference
+from tqdm import tqdm
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_path", type=str, required=True,
@@ -49,10 +50,16 @@ class Evaluator:
             return advanced_geometry.compute_score_orthocenter
         elif data_source == 'arc_1d':
             return arc_1d.compute_score
-        elif data_source == 'base_conversion':
-            return base_conversion.compute_score
-        elif data_source == 'caesar_cipher':
-            return caesar_cipher.compute_score
+        elif data_source == 'sudoku':
+            return sudoku.compute_score
+        elif data_source == 'color_cube_rotation':
+            return color_cube_rotation.compute_score
+        elif data_source == 'zebra_puzzles':
+            return zebra_puzzles.compute_score
+        elif data_source == 'list_functions':
+            return list_functions.compute_score
+        elif data_source == 'self_reference':
+            return self_reference.compute_score
         elif "multiply" in data_source or "arithmetic" in data_source:
             return multiply.compute_score
         elif "countdown" in data_source:
@@ -66,10 +73,11 @@ class Evaluator:
         df = pd.read_parquet(dataset_dir)
         correct_count = 0
         total_count = 0
-        for index, row in df.iterrows():
+        for index, row in tqdm(df.iterrows(), total=len(df), desc="Evaluating", unit="sample"):
             prompt = row['prompt'][0]['content']
             ground_truth = row['reward_model']['ground_truth']
             response = Evaluator.query_openai(prompt)
+            print(f"response {index} is {response}")
             compute_score_fn = Evaluator._select_rm_score_fn(row['data_source'])
             score = compute_score_fn(solution_str=response, ground_truth=ground_truth)
 
@@ -83,5 +91,5 @@ class Evaluator:
 
 if __name__ == "__main__":
     accuracy = Evaluator.evaluate()
-    print(f"Accuracy: {accuracy}")
+    print(f"Accuracy for {eval_dataset_dir} is: {accuracy}")
 
