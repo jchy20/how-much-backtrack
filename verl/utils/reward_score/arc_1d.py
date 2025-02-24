@@ -41,9 +41,10 @@ def extract_solution(solution_str):
 def parse_solution(final_answer):
     return [int(x) for x in final_answer.split()]
 
-def compute_score(solution_str, ground_truth, method='strict', format_score=0., score=1.):
+def compute_score(solution_str, ground_truth, method='strict', format_score=0.1, score=1.):
     answer = extract_solution(solution_str=solution_str)
     do_print = random.randint(1, 64) == 1
+    ground_truth_list = parse_solution(ground_truth)
     
     if do_print:
         print(f"--------------------------------")
@@ -57,13 +58,17 @@ def compute_score(solution_str, ground_truth, method='strict', format_score=0., 
             print("No answer found")
         return 0
     else:
-        answer_list = parse_solution(answer)
-        ground_truth_list = parse_solution(ground_truth)
-        if answer_list == ground_truth_list:
+        try:
+            answer_list = parse_solution(answer)
+            if answer_list == ground_truth_list:
+                if do_print:
+                    print(f"Correct answer, score: {score}")
+                return score
+            else:
+                if do_print:
+                    print(f"Incorrect answer, score: {format_score}")
+                return format_score
+        except:
             if do_print:
-                print(f"Correct answer, score: {score}")
-            return score
-        else: 
-            if do_print:
-                print(f"Incorrect answer, score: {format_score}")
+                print(f"Can't parse solution, format score: {format_score}")
             return format_score

@@ -51,10 +51,10 @@ def parse_two_numbers(input_str: str) -> tuple[float, float]:
     num1 = parts[0].strip()
     num2 = parts[1].strip()
     
-    return num1, num2
+    return float(num1), float(num2)
 
 
-def compute_score(solution_str, ground_truth, method='strict', format_score=0., score=1.):
+def compute_score(solution_str, ground_truth, method='strict', format_score=0.1, score=1.):
     answer = extract_solution(solution_str=solution_str)
     # print(f"Answer: {answer}")
     do_print = random.randint(1, 64) == 1
