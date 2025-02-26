@@ -20,23 +20,50 @@ import operator
 
 def extract_solution(solution_str):
     """Extract the equation from the solution string."""
-    # Remove everything before the first "Assistant:"
+    # Remove everything before the first "Assistant:" or "<|im_start|>assistant"
     if "Assistant:" in solution_str:
         solution_str = solution_str.split("Assistant:", 1)[1]
     elif "<|im_start|>assistant" in solution_str:
         solution_str = solution_str.split("<|im_start|>assistant", 1)[1]
     else:
         return None
-    solution_str = solution_str.split('\n')[-1]
-
+    
+    # Check if <think> and </think> appear exactly once and in the correct order
+    think_starts = solution_str.count("<think>")
+    think_ends = solution_str.count("</think>")
+    if think_starts != 1 or think_ends != 1:
+        return None
+    
+    think_start_pos = solution_str.find("<think>")
+    think_end_pos = solution_str.find("</think>")
+    if think_start_pos > think_end_pos:
+        return None
+    
+    think_content = solution_str[think_start_pos + len("<think>"):think_end_pos]
+    if not think_content.strip():
+        return None
+    # Check if <answer> and </answer> appear exactly once and in the correct order
+    answer_starts = solution_str.count("<answer>")
+    answer_ends = solution_str.count("</answer>")
+    if answer_starts != 1 or answer_ends != 1:
+        return None
+    
+    answer_start_pos = solution_str.find("<answer>")
+    answer_end_pos = solution_str.find("</answer>")
+    if answer_start_pos > answer_end_pos:
+        return None
+    
+    # Check that answer is not inside think
+    if think_end_pos > answer_start_pos:
+        return None
+    # Extract the answer
     answer_pattern = r'<answer>(.*?)</answer>'
-    match = re.finditer(answer_pattern, solution_str)
-    matches = list(match)
-    if matches:
-        final_answer = matches[-1].group(1).strip()
+    match = re.search(answer_pattern, solution_str)
+    if match:
+        final_answer = match.group(1).strip()
+        return final_answer
     else:
-        final_answer = None
-    return final_answer
+        return None
 
 
 def compute_score(solution_str, ground_truth, method='strict', format_score=0.1, score=1.):

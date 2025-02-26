@@ -17,7 +17,7 @@ Note that we don't combine the main with ray_trainer as ray_trainer is used by o
 
 from verl import DataProto
 import torch
-from verl.utils.reward_score import gsm8k, math, multiply, countdown, leg_counting, advanced_geometry, arc_1d, base_conversion, caesar_cipher
+from verl.utils.reward_score import gsm8k, math, multiply, countdown, leg_counting, advanced_geometry, arc_1d, sudoku, color_cube_rotation, zebra_puzzles, list_functions, self_reference
 from verl.trainer.ppo.ray_trainer import RayPPOTrainer
 
 
@@ -34,10 +34,16 @@ def _select_rm_score_fn(data_source):
         return advanced_geometry.compute_score_orthocenter
     elif data_source == 'arc_1d':
         return arc_1d.compute_score
-    elif data_source == 'base_conversion':
-        return base_conversion.compute_score
-    elif data_source == 'caesar_cipher':
-        return caesar_cipher.compute_score
+    elif data_source == 'sudoku':
+        return sudoku.compute_score
+    elif data_source == 'color_cube_rotation':
+        return color_cube_rotation.compute_score
+    elif data_source == 'zebra_puzzles':
+        return zebra_puzzles.compute_score
+    elif data_source == 'list_functions':
+        return list_functions.compute_score
+    elif data_source == 'self_reference':
+        return self_reference.compute_score
     elif "multiply" in data_source or "arithmetic" in data_source:
         return multiply.compute_score
     elif "countdown" in data_source:
