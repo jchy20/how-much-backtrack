@@ -16,7 +16,7 @@ import re
 import random
 import ast
 import operator
-
+import numpy as np
 
 def extract_solution(solution_str):
     """Extract the equation from the solution string."""
@@ -69,20 +69,19 @@ def extract_numbers(s):
     lines = s.strip().splitlines()
     result = []
     for line in lines:
-        tokens = line.split()
-        numbers = []
-        for token in tokens:
-            try:
-                num = int(token)
-            except ValueError:
-                try:
-                    num = float(token)
-                except ValueError:
-                    continue
-            numbers.append(num)
-        result.append(numbers)
-    return result
+        result.append([int(x) for x in line.split()])
+    return np.array(result)
 
+def check_solution(answer, ground_truth):
+    if len(answer) != len(ground_truth):
+        return False
+    for i in range(len(answer)):
+        if len(answer[i]) != len(ground_truth[i]):
+            return False
+        for j in range(len(answer[i])):
+            if answer[i][j] != ground_truth[i][j]:
+                return False
+    return True
 
 def compute_score(solution_str, ground_truth, method='strict', format_score=0.1, score=1.):
     """The scoring function for GSM8k.
@@ -97,7 +96,7 @@ def compute_score(solution_str, ground_truth, method='strict', format_score=0.1,
         score: the score for the correct answer
     """
     answer = extract_solution(solution_str=solution_str)
-    ground_truth = extract_numbers(ground_truth)
+    ground_truth = ground_truth['solution']
     do_print = random.randint(1, 64) == 1
     
     if do_print:
@@ -113,14 +112,13 @@ def compute_score(solution_str, ground_truth, method='strict', format_score=0.1,
     else:
         try:
             answer = extract_numbers(answer)
-
-            if answer == ground_truth:
+            if check_solution(answer, ground_truth):
                 if do_print:
                     print(f"Correct answer, score: {score}")
                 return score
             else:
                 if do_print:
-                    print(f"Incorrect answer but correct format, score: {format_score}")
+                    print(f"Incorrect answer, score: {format_score}")
                 return format_score
             
         except:

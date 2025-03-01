@@ -16,6 +16,7 @@ import re
 import random
 import ast
 import operator
+import numpy as np
 
 
 def extract_solution(solution_str):
@@ -65,11 +66,22 @@ def extract_solution(solution_str):
     else:
         return None
 
-# def parse_solution(final_answer):
-#     return [int(x) for x in final_answer.split()]
+def parse_solution(final_answer):
+    parsed_list = [int(x) for x in final_answer.split()]
+    return np.array(parsed_list)
+
+def check_solution(answer, ground_truth):
+    if len(answer) != len(ground_truth):
+        return False
+    for i in range(len(answer)):
+        if answer[i] != ground_truth[i]:
+            return False
+    return True
+
 
 def compute_score(solution_str, ground_truth, method='strict', format_score=0.1, score=1.):
     answer = extract_solution(solution_str=solution_str)
+    ground_truth = ground_truth['test_example']['output']
     do_print = random.randint(1, 64) == 1
     # ground_truth_list = parse_solution(ground_truth)
     
@@ -85,11 +97,17 @@ def compute_score(solution_str, ground_truth, method='strict', format_score=0.1,
             print("No answer found, solution format incorrect")
         return 0
     else:
-        if answer == ground_truth:
+        try:
+            answer = parse_solution(answer)
+            if check_solution(answer, ground_truth):
+                if do_print:
+                    print(f"Correct answer, score: {score}")
+                return score
+            else:
+                if do_print:
+                    print(f"Incorrect answer, score: {format_score}")
+                return format_score
+        except:
             if do_print:
-                print(f"Correct answer, score: {score}")
-            return score
-        else:
-            if do_print:
-                print(f"Incorrect answer, score: {format_score}")
+                print("Answer is not a list of integers seperated by one or more spaces, format score: {format_score}")
             return format_score

@@ -66,8 +66,17 @@ def extract_solution(solution_str):
         return None
 
 def parse_string_to_ints(input_string: str) -> list[int]:
+    # Check if the string contains square brackets
+    if '[' not in input_string and ']' not in input_string:
+        return None
+    
     cleaned_string = input_string.strip('[]')
-    numbers = [int(num.strip()) for num in cleaned_string.split(',')]
+    
+    if ',' in cleaned_string:
+        numbers = [int(num.strip()) for num in cleaned_string.split(',')]
+    else:
+        numbers = [int(num) for num in cleaned_string.split()]
+    
     return numbers
 
 
