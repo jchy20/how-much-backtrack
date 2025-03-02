@@ -117,3 +117,6 @@ qwen-3b
 
 /TinyZero/examples/data_preprocess/reasoning-gym/temp.ipynb
 /TinyZero/verl/trainer/temp.ipynb
+
+#slurm_logs
+**/slurm_logs/*

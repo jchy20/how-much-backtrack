@@ -2,33 +2,39 @@
 #SBATCH --partition=compsci-gpu
 #SBATCH --nodes=1
 #SBATCH --time=7-00:00:00
-#SBATCH --gres=gpu:a6000:4
+#SBATCH --gres=gpu:a5000:4
 #SBATCH --mem=500G
 #SBATCH --cpus-per-task=10
-#SBATCH --job-name=eval
-#SBATCH --output=slurm_logs/eval.out
+#SBATCH --job-name=eval-test-7b
+#SBATCH --output=slurm_logs/eval-test-7b.out
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate zero
 
 zsh -l -c '
-ag_path="$HOME/data/advanced_geometry/test.parquet"
-countdown_path="$HOME/data/countdown/test.parquet"
-arc_1d_path="$HOME/data/arc_1d/test.parquet"
-sudoku_path="$HOME/data/sudoku/test.parquet"
-color_cube_rotation_path="$HOME/data/color_cube_rotation/test.parquet"
-zebra_puzzles_path="$HOME/data/zebra_puzzles/test.parquet"
-list_functions_path="$HOME/data/list_functions/test.parquet"
-self_reference_path="$HOME/data/self_reference/test.parquet"
+# Define dataset paths
+ag_path="/home/users/hc387/data/advanced_geometry/test.parquet"
+countdown_path="/home/users/hc387/data/countdown/test.parquet"
+arc_1d_path="/home/users/hc387/data/arc_1d/test.parquet"
+sudoku_path="/home/users/hc387/data/sudoku/test.parquet"
+color_cube_rotation_path="/home/users/hc387/data/color_cube_rotation/test.parquet"
+zebra_puzzles_path="/home/users/hc387/data/zebra_puzzles/test.parquet"
+list_functions_path="/home/users/hc387/data/list_functions/test.parquet"
+self_reference_path="/home/users/hc387/data/self_reference/test.parquet"
 
+# Define model and which dataset
+eval_data="qwen2.5-7b-instruct-test"
 
-model_dir="/usr/xtmp/hc387/models/Qwen2.5-3B-Instruct"
-port=8000
+mkdir -p ${eval_data}
 
+model_dir="Qwen/Qwen2.5-7B-Instruct"
+port=8001
+
+# Start the API server
 python -m vllm.entrypoints.openai.api_server \
     --model "$model_dir" \
     --tensor-parallel-size 4 \
-    --host 0.0.0.0 --port $port > api_server.log 2>&1 &
+    --host 0.0.0.0 --port $port > ${eval_data}/api_server.log 2>&1 &
 
 API_PID=$!
 
@@ -38,63 +44,90 @@ while ! nc -z localhost $port; do
 done
 echo "API server is up!"
 
-# Run evaluation in the foreground so the script waits for it to complete
-python vllm_eval.py \
+# Run all evaluations in parallel and capture PIDs directly
+echo "Starting evaluation for advanced_geometry..."
+python baseline_eval.py \
     --model_path $model_dir \
     --eval_dataset_dir $ag_path \
-    --port $port > advanced_geometry.log 2>&1
+    --task_name "advanced_geometry" \
+    --port $port > ${eval_data}/advanced_geometry.log 2>&1 &
+ag_pid=$!
 
-echo "Advanced Geometry evaluation complete"
-
-python vllm_eval.py \
+echo "Starting evaluation for countdown..."
+python baseline_eval.py \
     --model_path $model_dir \
     --eval_dataset_dir $countdown_path \
-    --port $port > countdown.log 2>&1
+    --task_name "countdown" \
+    --port $port > ${eval_data}/countdown.log 2>&1 &
+countdown_pid=$!
 
-echo "Countdown evaluation complete"
-
-python vllm_eval.py \
+echo "Starting evaluation for arc_1d..."
+python baseline_eval.py \
     --model_path $model_dir \
     --eval_dataset_dir $arc_1d_path \
-    --port $port > arc_1d.log 2>&1
+    --task_name "arc_1d" \
+    --port $port > ${eval_data}/arc_1d.log 2>&1 &
+arc_1d_pid=$!
 
-echo "Arc 1D evaluation complete"
-
-python vllm_eval.py \
+echo "Starting evaluation for sudoku..."
+python baseline_eval.py \
     --model_path $model_dir \
     --eval_dataset_dir $sudoku_path \
-    --port $port > sudoku.log 2>&1
+    --task_name "sudoku" \
+    --port $port > ${eval_data}/sudoku.log 2>&1 &
+sudoku_pid=$!
 
-echo "Sudoku evaluation complete"
-
-python vllm_eval.py \
+echo "Starting evaluation for color_cube_rotation..."
+python baseline_eval.py \
     --model_path $model_dir \
     --eval_dataset_dir $color_cube_rotation_path \
-    --port $port > color_cube_rotation.log 2>&1
+    --task_name "color_cube_rotation" \
+    --port $port > ${eval_data}/color_cube_rotation.log 2>&1 &
+color_cube_pid=$!
 
-echo "Color Cube Rotation evaluation complete"  
-
-python vllm_eval.py \
+echo "Starting evaluation for zebra_puzzles..."
+python baseline_eval.py \
     --model_path $model_dir \
     --eval_dataset_dir $zebra_puzzles_path \
-    --port $port > zebra_puzzles.log 2>&1
+    --task_name "zebra_puzzles" \
+    --port $port > ${eval_data}/zebra_puzzles.log 2>&1 &
+zebra_pid=$!
 
-echo "Zebra Puzzles evaluation complete"
-
-python vllm_eval.py \
+echo "Starting evaluation for list_functions..."
+python baseline_eval.py \
     --model_path $model_dir \
     --eval_dataset_dir $list_functions_path \
-    --port $port > list_functions.log 2>&1
+    --task_name "list_functions" \
+    --port $port > ${eval_data}/list_functions.log 2>&1 &
+list_functions_pid=$!
 
-echo "List Functions evaluation complete"
-
-python vllm_eval.py \
+echo "Starting evaluation for self_reference..."
+python baseline_eval.py \
     --model_path $model_dir \
     --eval_dataset_dir $self_reference_path \
-    --port $port > self_reference.log 2>&1
+    --task_name "self_reference" \
+    --port $port > ${eval_data}/self_reference.log 2>&1 &
+self_reference_pid=$!
 
-echo "Self Reference evaluation complete"
+# Store all PIDs in an array
+eval_pids=($ag_pid $countdown_pid $arc_1d_pid $sudoku_pid $color_cube_pid $zebra_pid $list_functions_pid $self_reference_pid)
 
+# Wait for all evaluation processes to complete
+echo "Waiting for all evaluations to complete..."
+for pid in ${eval_pids[@]}; do
+    wait $pid
+    echo "Process $pid completed"
+done
+
+echo "All evaluations completed!"
+
+# Collect and display results
+echo "=== Evaluation Results ==="
+for task in advanced_geometry countdown arc_1d sudoku color_cube_rotation zebra_puzzles list_functions self_reference; do
+    echo "--- $task ---"
+    grep "Accuracy for" ${eval_data}/${task}.log
+    echo ""
+done
 
 echo "Shutting down API server..."
 kill $API_PID
