@@ -128,7 +128,7 @@ def baseline_extract_solution(solution_str):
     solution_str = solution_str.split('\n')[-1]
 
     answer_pattern = r'<answer>(.*?)</answer>'
-    match = re.search(answer_pattern, solution_str, re.DOTALL)
+    match = re.finditer(answer_pattern, solution_str)
     matches = list(match)
     if matches:
         final_answer = matches[-1].group(1).strip()
