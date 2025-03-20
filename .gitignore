@@ -120,3 +120,8 @@ qwen-3b
 
 #slurm_logs
 **/slurm_logs/*
+
+#eval output
+eval/3b-inst-eval/
+eval/3b-inst-rl-baseline/
+eval/3b-rl-eval/
