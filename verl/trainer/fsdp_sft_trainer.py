@@ -94,6 +94,7 @@ class FSDPSFTTrainer(object):
         # build dataset
         self.train_dataset = SFTDataset(parquet_files=config.data.train_files,
                                         tokenizer=self.tokenizer,
+                                        apply_chat_template=config.data.get('apply_chat_template', True),
                                         prompt_key=config.data.prompt_key,
                                         prompt_dict_keys=config.data.get('prompt_dict_keys', None),
                                         response_key=config.data.response_key,
@@ -102,6 +103,7 @@ class FSDPSFTTrainer(object):
                                         truncation=config.data.truncation)
         self.val_dataset = SFTDataset(parquet_files=config.data.val_files,
                                       tokenizer=self.tokenizer,
+                                      apply_chat_template=config.data.get('apply_chat_template', True),
                                       prompt_key=config.data.prompt_key,
                                       prompt_dict_keys=config.data.get('prompt_dict_keys', None),
                                       response_key=config.data.response_key,

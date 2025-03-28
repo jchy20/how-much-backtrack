@@ -119,7 +119,8 @@ qwen-3b
 /TinyZero/verl/trainer/temp.ipynb
 
 #slurm_logs
-**/slurm_logs/*
+**/slurm_logs/
+**/slurm_logs/**
 
 #eval output
 eval/3b-inst-eval/

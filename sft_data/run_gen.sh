@@ -30,12 +30,14 @@ task6="zebra_puzzles"
 task7="list_functions"
 task8="self_reference"
 
+
 # Define model and which dataset
 eval_data="Qwen7b-instruct"
+output_dir=""
 mkdir -p ${eval_data}
 
 model_dir="Qwen/Qwen2.5-7B-Instruct"
-port=8007
+port=8000
 
 # Start the API server
 python -m vllm.entrypoints.openai.api_server \
@@ -58,6 +60,7 @@ python run_gen.py \
     --model_type $eval_data \
     --eval_dataset_dir $dataset_path1 \
     --task_name $task1 \
+    --output_dir ${output_dir} \
     --port $port > ${eval_data}/${task1}.log 2>&1 &
 dataset1_pid=$!
 
@@ -67,6 +70,7 @@ python run_gen.py \
     --model_type $eval_data \
     --eval_dataset_dir $dataset_path2 \
     --task_name $task2 \
+    --output_dir ${output_dir} \
     --port $port > ${eval_data}/${task2}.log 2>&1 &
 dataset2_pid=$!
 
@@ -76,6 +80,7 @@ python run_gen.py \
     --model_type $eval_data \
     --eval_dataset_dir $dataset_path3 \
     --task_name $task3 \
+    --output_dir ${output_dir} \
     --port $port > ${eval_data}/${task3}.log 2>&1 &
 dataset3_pid=$!
 
@@ -85,6 +90,7 @@ python run_gen.py \
     --model_type $eval_data \
     --eval_dataset_dir $dataset_path4 \
     --task_name $task4 \
+    --output_dir ${output_dir} \
     --port $port > ${eval_data}/${task4}.log 2>&1 &
 dataset4_pid=$!
 
@@ -94,6 +100,7 @@ python run_gen.py \
     --model_type $eval_data \
     --eval_dataset_dir $dataset_path5 \
     --task_name $task5 \
+    --output_dir ${output_dir} \
     --port $port > ${eval_data}/${task5}.log 2>&1 &
 dataset5_pid=$!
 
@@ -103,6 +110,7 @@ python run_gen.py \
     --model_type $eval_data \
     --eval_dataset_dir $dataset_path6 \
     --task_name $task6 \
+    --output_dir ${output_dir} \
     --port $port > ${eval_data}/${task6}.log 2>&1 &
 dataset6_pid=$!
 
@@ -112,6 +120,7 @@ python run_gen.py \
     --model_type $eval_data \
     --eval_dataset_dir $dataset_path7 \
     --task_name $task7 \
+    --output_dir ${output_dir} \
     --port $port > ${eval_data}/${task7}.log 2>&1 &
 dataset7_pid=$!
 
@@ -121,6 +130,7 @@ python run_gen.py \
     --model_type $eval_data \
     --eval_dataset_dir $dataset_path8 \
     --task_name $task8 \
+    --output_dir ${output_dir} \
     --port $port > ${eval_data}/${task8}.log 2>&1 &
 dataset8_pid=$!
 
