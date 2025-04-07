@@ -6,105 +6,19 @@ from typing import List, Tuple, Dict, Optional
 from tqdm import tqdm
 from utils import prepare_sufficiency_input
 
-@dataclass
-class ContextActivations:
-    """Store pre-computed activations and token information"""
-    full_context: str
-    model_token_ids: torch.Tensor
-    attention_activations: Dict[str, torch.Tensor]  # store raw attention tensors
-    gold_location: Optional["GoldLocation"]
-
-@dataclass
-class GoldLocation:
-    """Store gold location information based on supporting sentences"""
-    start_idx: int  
-    end_idx: int     
-    text: str
-    percentage: float      
-
 class ActivationManager:
     def __init__(self, model, model_tokenizer, device):
         self.model = model
         self.model_tokenizer = model_tokenizer
         self.device = device
         self.attention_activations = {}     
-            
-        # Detect model type
-        self.model_type = self._detect_model_type()
         
-        # Set model-specific configurations
-        if self.model_type == "phi":
-            self.hidden_size = self.model.config.hidden_size
-            self.num_heads = self.model.config.num_attention_heads
-            self.head_dim = self.hidden_size // self.num_heads
-        elif self.model_type == "qwen2":
-            self.hidden_size = self.model.config.hidden_size
-            self.num_heads = self.model.config.num_attention_heads
-            self.head_dim = self.hidden_size // self.num_heads
-            self.kv_heads = self.model.config.num_key_value_heads
+        self.hidden_size = self.model.config.hidden_size
+        self.num_heads = self.model.config.num_attention_heads
+        self.head_dim = self.hidden_size // self.num_heads
+        self.kv_heads = self.model.config.num_key_value_heads
         
         self._register_hooks()
-    
-    def _detect_model_type(self) -> str:
-        """Detect the type of model being used."""
-        model_name = self.model.__class__.__name__.lower()
-        if "phi" in model_name:
-            return "phi"
-        elif "qwen2" in model_name:
-            return "qwen2"
-        return "llama"  # default to llama for other models
-        
-    def find_gold_location(self, full_context: str, gold_information: List[str]) -> Optional[GoldLocation]:
-        """Find gold location indices in tokenized sequence using the gold information."""
-        try:
-            if not gold_information:
-                print("Gold information not provided")
-                return GoldLocation(
-                    start_idx=0,
-                    end_idx=100,
-                    text="gold_sentence",
-                    percentage=0.01
-                )
-                return None
-                
-            # Get the gold sentence
-            gold_sentence = gold_information.strip()
-            if not gold_sentence:
-                return None
-                
-            # Find the character position of gold sentence in full context
-            char_start = full_context.find(gold_sentence)
-            if char_start == -1:
-                return None
-            char_end = char_start + len(gold_sentence)
-            
-            # Get text before gold sentence to find token offset
-            text_before = full_context[:char_start]
-            tokens_before = self.model_tokenizer(
-                text_before,
-                add_special_tokens=False,
-            )
-            
-            # Get tokens for the gold sentence
-            gold_tokens = self.model_tokenizer(
-                gold_sentence,
-                add_special_tokens=False,
-            )
-            
-            # Calculate start and end indices in token space
-            start_idx = len(tokens_before.input_ids)
-            end_idx = start_idx + len(gold_tokens.input_ids)
-            
-            return GoldLocation(
-                start_idx=start_idx,
-                end_idx=end_idx,
-                text=gold_sentence,
-                percentage=round(char_end/len(full_context), 4)
-            )
-            
-        except Exception as e:
-            print(f"Error finding gold location: {str(e)}")
-            return None
             
     def compute_activations(self, query: str, context: str, gold_information: List[str]) -> ContextActivations:
         """Compute activations with character-level alignment"""                

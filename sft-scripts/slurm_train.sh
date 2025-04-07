@@ -5,8 +5,8 @@
 #SBATCH --gres=gpu:a6000:4
 #SBATCH --mem=500G
 #SBATCH --cpus-per-task=10
-#SBATCH --job-name=countdown_sft_cold-start
-#SBATCH --output=slurm_logs/countdown_sft_cold-start.out
+#SBATCH --job-name=zebra_puzzles_sft_cold-start_incorrect
+#SBATCH --output=slurm_logs/zebra_puzzles_sft_cold-start_incorrect.out
 
 source /home/users/hc387/miniconda3/etc/profile.d/conda.sh
 conda activate zero
@@ -19,14 +19,14 @@ zsh -l -c '
 # Set environment variables
 export N_GPUS=4
 export BASE_MODEL=Qwen/Qwen2.5-3B-Instruct
-export TRAIN_DATA_DIR=/home/users/hc387/data/sft_data/Qwen3b-instruct/correct/countdown.parquet
+export TRAIN_DATA_DIR=/home/users/hc387/data/sft_data/Qwen3b-instruct/incorrect/zebra_puzzles.parquet
 export VAL_DATA_DIR=/home/users/hc387/data/sft_data/Qwen3b-instruct/correct/combined_data.parquet
 export PROMPT_KEY=prompt
 export RESPONSE_KEY=completion
-export MICRO_BATCH_SIZE=8
-export MAX_LENGTH=2048
+export MICRO_BATCH_SIZE=16
+export MAX_LENGTH=1024
 export PROJECT_NAME=SFT_Cold-Start
-export EXPERIMENT_NAME=qwen3b-inst_countdown
+export EXPERIMENT_NAME=qwen3b-inst_zebra_puzzles_incorrect
 export nproc_per_node=4
 
 # Run the training script

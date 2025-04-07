@@ -1,0 +1,48 @@
+Waiting for API server to start...
+API server is up!
+Starting evaluation for /home/users/hc387/data/advanced_geometry/base_test.parquet...
+Starting evaluation for /home/users/hc387/data/countdown/base_test.parquet...
+Starting evaluation for /home/users/hc387/data/arc_1d/base_test.parquet...
+Starting evaluation for /home/users/hc387/data/sudoku/base_test.parquet...
+Starting evaluation for /home/users/hc387/data/color_cube_rotation/base_test.parquet...
+Starting evaluation for /home/users/hc387/data/zebra_puzzles/base_test.parquet...
+Starting evaluation for /home/users/hc387/data/list_functions/base_test.parquet...
+Starting evaluation for /home/users/hc387/data/self_reference/base_test.parquet...
+Waiting for all evaluations to complete...
+Process 3406401 completed
+Process 3406402 completed
+Process 3406403 completed
+Process 3406404 completed
+Process 3406405 completed
+Process 3406406 completed
+Process 3406407 completed
+Process 3406408 completed
+All evaluations completed!
+=== qwen3b_cd-tz-rep_400 ===
+=== False ===
+=== Evaluation Results ===
+--- advanced_geometry ---
+Task accuracy for advanced_geometry is: 0.032. Format accuracy is: 0.927
+
+--- countdown ---
+Task accuracy for countdown is: 0.243. Format accuracy is: 0.336
+
+--- arc_1d ---
+Task accuracy for arc_1d is: 0.019. Format accuracy is: 0.878
+
+--- sudoku ---
+Task accuracy for sudoku is: 0.0. Format accuracy is: 0.772
+
+--- color_cube_rotation ---
+Task accuracy for color_cube_rotation is: 0.286. Format accuracy is: 0.999
+
+--- zebra_puzzles ---
+Task accuracy for zebra_puzzles is: 0.245. Format accuracy is: 0.95
+
+--- list_functions ---
+Task accuracy for list_functions is: 0.17. Format accuracy is: 0.84
+
+--- self_reference ---
+Task accuracy for self_reference is: 0.162. Format accuracy is: 0.972
+
+Shutting down API server...

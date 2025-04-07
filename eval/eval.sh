@@ -5,8 +5,8 @@
 #SBATCH --gres=gpu:a5000:4
 #SBATCH --mem=500G
 #SBATCH --cpus-per-task=10
-#SBATCH --job-name=qwen3b-countdown-500
-#SBATCH --output=slurm_logs/qwen3b-countdown-500.out
+#SBATCH --job-name=color_cube_rotation_from_qwen3binst_sft1508_rl400
+#SBATCH --output=slurm_logs/color_cube_rotation_from_qwen3binst_sft1508_rl400.out
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate zero
@@ -26,12 +26,12 @@ list_functions_path="/home/users/hc387/data/list_functions/test.parquet"
 self_reference_path="/home/users/hc387/data/self_reference/test.parquet"
 
 # Define model and which dataset
-eval_data="qwen3b_countdown_500"
+eval_data="color_cube_rotation_from_qwen3binst_sft1508_rl400"
 
 mkdir -p ${eval_data}
 
-model_dir="/usr/xtmp/hc387/TinyZero/qwen-3b/TinyZero/countdown-qwen3b-inst/actor/global_step_500"
-port=8000
+model_dir="/usr/xtmp/hc387/TinyZero/qwen-3b/TinyZero/color_cube_rotation_from_qwen3binst_sft1508/actor/global_step_400"
+port=8004
 
 # Start the API server
 python -m vllm.entrypoints.openai.api_server \

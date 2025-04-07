@@ -4,6 +4,7 @@ import argparse
 from verl.utils.reward_score import multiply, countdown, advanced_geometry, arc_1d, sudoku, color_cube_rotation, zebra_puzzles, list_functions, self_reference
 from tqdm import tqdm
 import os
+import time
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_path", type=str, required=True,
@@ -18,6 +19,8 @@ parser.add_argument("--task_name", type=str, default=None,
                   help="Name of the task being evaluated (for logging)")
 parser.add_argument("--output_dir", type=str, default="/home/users/hc387/data/sft_data",
                   help="Directory to save output")
+parser.add_argument("--save_interval", type=int, default=20000,
+                  help="Save data every N samples")
 args = parser.parse_args()
 
 model_path = args.model_path
@@ -26,6 +29,7 @@ eval_dataset_dir = args.eval_dataset_dir
 port = args.port
 task_name = args.task_name
 output_dir = args.output_dir
+save_interval = args.save_interval
 
 client = OpenAI(
     base_url=f"http://localhost:{port}/v1",
@@ -58,50 +62,24 @@ class Generator:
 
     @staticmethod
     def query_openai(prompt: str, model_path: str = model_path):
-        chat_response = client.completions.create(
-            model=model_path,
-            prompt=prompt,
-            max_tokens=4096,
-            n = 5,
-        )
-        completions = [choice.text for choice in chat_response.choices]
-        # prompt_responses = [prompt + response for response in only_responses]
-        return completions
-        
+        try:
+            chat_response = client.completions.create(
+                model=model_path,
+                prompt=prompt,
+                max_tokens=4096,
+                n = 5,
+            )
+            completions = [choice.text for choice in chat_response.choices]
+            return completions
+        except Exception as e:
+            print(f"API request failed: {e}")
+            print(f"Waiting for 10 seconds before continuing...")
+            time.sleep(10)
+            return []
+    
     @staticmethod
-    def generate(dataset_dir: str = eval_dataset_dir):
-        df = pd.read_parquet(dataset_dir)
-        correct_rows = []
-        incorrect_rows = []
-
-        correct_count = 0
-        incorrect_count = 0
-
-        pbar = tqdm(df.iterrows(), total=len(df), desc="Evaluating", unit="sample")
-        for index, row in pbar:
-            prompt = row['prompt'][0]['content']
-            ground_truth = row['reward_model']['ground_truth']
-            completions = Generator.query_openai(prompt)
-            compute_score_fn = Generator._select_rm_score_fn(row['data_source'])
-
-            prompt_responses = [prompt + completion for completion in completions]
-            
-            for idx, prompt_response in enumerate(prompt_responses):
-                if self_reference.extract_solution(prompt_response) is None:
-                    continue
-                
-
-                score = compute_score_fn(solution_str=prompt_response, ground_truth=ground_truth)
-                new_pair = {'prompt': prompt, 'completion': completions[idx]}
-                if score == 1.0:
-                    correct_count += 1
-                    correct_rows.append(new_pair)
-                else:
-                    incorrect_count += 1
-                    incorrect_rows.append(new_pair)
-
-            pbar.set_postfix(correct_count=correct_count, incorrect_count=incorrect_count)
-
+    def save_data(correct_rows, incorrect_rows, model_type, task_name, output_dir, checkpoint=False, processed_count=None):
+        """Save the collected data to parquet files."""
         correct_parquet = pd.DataFrame(correct_rows)
         incorrect_parquet = pd.DataFrame(incorrect_rows)
 
@@ -111,11 +89,69 @@ class Generator:
         os.makedirs(correct_dir, exist_ok=True)
         os.makedirs(incorrect_dir, exist_ok=True)
 
+        filename = f'{task_name}'
+        if checkpoint:
+            if processed_count is not None:
+                filename = f'{task_name}_checkpoint_{processed_count}'
+            else:
+                timestamp = int(time.time())
+                filename = f'{task_name}_checkpoint_{timestamp}'
+        
         if not correct_parquet.empty:
-            correct_parquet.to_parquet(os.path.join(correct_dir, f'{task_name}.parquet'))
+            correct_parquet.to_parquet(os.path.join(correct_dir, f'{filename}.parquet'))
+            print(f"Saved {len(correct_parquet)} correct samples to {os.path.join(correct_dir, f'{filename}.parquet')}")
         if not incorrect_parquet.empty:
-            incorrect_parquet.to_parquet(os.path.join(incorrect_dir, f'{task_name}.parquet'))
+            incorrect_parquet.to_parquet(os.path.join(incorrect_dir, f'{filename}.parquet'))
+            print(f"Saved {len(incorrect_parquet)} incorrect samples to {os.path.join(incorrect_dir, f'{filename}.parquet')}")
+        
+    @staticmethod
+    def generate(dataset_dir: str = eval_dataset_dir):
+        df = pd.read_parquet(dataset_dir)
+        correct_rows = []
+        incorrect_rows = []
 
+        correct_count = 0
+        incorrect_count = 0
+        processed_count = 0
+
+        pbar = tqdm(df.iterrows(), total=len(df), desc="Evaluating", unit="sample")
+        for index, row in pbar:
+            prompt = row['prompt'][0]['content']
+            ground_truth = row['reward_model']['ground_truth']
+            completions = Generator.query_openai(prompt)
+            
+            if not completions:
+                print(f"Skipping sample {index} due to API failure")
+                continue
+                
+            compute_score_fn = Generator._select_rm_score_fn(row['data_source'])
+
+            prompt_responses = [prompt + completion for completion in completions]
+            
+            for idx, prompt_response in enumerate(prompt_responses):
+                if self_reference.extract_solution(prompt_response) is None:
+                    continue
+                
+                score = compute_score_fn(solution_str=prompt_response, ground_truth=ground_truth)
+                new_pair = {'prompt': prompt, 'completion': completions[idx]}
+                if score == 1.0:
+                    correct_count += 1
+                    correct_rows.append(new_pair)
+                else:
+                    incorrect_count += 1
+                    incorrect_rows.append(new_pair)
+
+            processed_count += 1
+            pbar.set_postfix(correct_count=correct_count, incorrect_count=incorrect_count)
+            
+            # Periodically save the data
+            if processed_count % save_interval == 0:
+                print(f"\nSaving checkpoint after processing {processed_count}/{len(df)} samples...")
+                Generator.save_data(correct_rows, incorrect_rows, model_type, task_name, output_dir, checkpoint=True, processed_count=processed_count)
+                print("Checkpoint saved.")
+
+        # Final save at the end
+        Generator.save_data(correct_rows, incorrect_rows, model_type, task_name, output_dir)
 
         # return counts
         return correct_count, incorrect_count
