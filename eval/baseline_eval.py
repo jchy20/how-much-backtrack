@@ -15,6 +15,8 @@ parser.add_argument("--task_name", type=str, default=None,
                   help="Name of the task being evaluated (for logging)")
 parser.add_argument("--baseline", type=lambda x: x.lower() == 'true', default=False,
                   help="Whether to use baseline evaluation")
+parser.add_argument("--batch_size", type=int, default=16,
+                  help="Batch size for evaluation")
 args = parser.parse_args()
 
 model_path = args.model_path
@@ -22,11 +24,11 @@ eval_dataset_dir = args.eval_dataset_dir
 port = args.port
 task_name = args.task_name
 baseline = args.baseline
-
+batch_size = args.batch_size
 
 class Evaluator:
     @staticmethod
-    def query_openai(prompt: str, model_path: str = model_path, port: str = port):
+    def query_openai(prompts: list[str], model_path: str = model_path, port: str = port):
         client = OpenAI(
             base_url=f"http://localhost:{port}/v1",
             api_key="EMPTY",
@@ -42,17 +44,22 @@ class Evaluator:
 
         chat_response = client.completions.create(
             model=model_path,
-            prompt=prompt,
+            prompt=prompts,
             max_tokens=4096,
             # n = 5,
         )
+        completions = []
+        for i, prompt in enumerate(prompts):
+            completions.append(prompt + chat_response.choices[i].text)
+
+        return completions
 
         # for choice in chat_response.choices:
         #     if self_reference.baseline_compute_score(choice.message.content) is not None:
         #         return choice.message.content
         
-        response = prompt + chat_response.choices[0].text
-        return response
+        # response = prompt + chat_response.choices[0].text
+        # return response
 
     @staticmethod
     def _select_rm_score_fn(data_source, baseline=False):
@@ -99,36 +106,51 @@ class Evaluator:
             else:
                 raise NotImplementedError
 
+    @staticmethod
+    def process_batch(rows, model_path: str = model_path):
+        """Process a single example with the API and evaluate the results."""
+        prompts = []
+        ground_truths = []
+        data_sources = []
+        for i in range(len(rows)):
+            prompts.append(rows.iloc[i]['prompt'][0]['content'])
+            ground_truths.append(rows.iloc[i]['reward_model']['ground_truth'])
+            data_sources.append(rows.iloc[i]['data_source'])
         
+        completions = Evaluator.query_openai(prompts=prompts, model_path=model_path, port=port)
+        
+        correct_count = 0
+        format_correct_count = 0
+        total_count = len(completions)
+        
+        for i, completion in enumerate(completions):
+            ground_truth = ground_truths[i]
+            compute_score_fn = Evaluator._select_rm_score_fn(data_sources[i], baseline=baseline)
+            if self_reference.extract_solution(completion) is not None:
+                format_correct_count += 1
+            if compute_score_fn(completion, ground_truth) == 1.0:
+                correct_count += 1
+        
+        return correct_count, format_correct_count, total_count
 
     @staticmethod
-    def evaluate(dataset_dir: str = eval_dataset_dir, baseline: bool = baseline):
+    def evaluate(dataset_dir: str = eval_dataset_dir, baseline: bool = baseline, batch_size: int = batch_size):
         df = pd.read_parquet(dataset_dir)
-        format_correct_count = 0
         correct_count = 0
+        format_correct_count = 0
         total_count = 0
 
-        for index, row in tqdm(df.iterrows(), total=len(df), desc="Evaluating", unit="sample"):
-            prompt = row['prompt'][0]['content']
-            ground_truth = row['reward_model']['ground_truth']
-            response = Evaluator.query_openai(prompt)
-            # response = "<|im_start|>assistant\nLet me solve this step by step.\n<think>" + response
-            compute_score_fn = Evaluator._select_rm_score_fn(row['data_source'], baseline=baseline)
+        pbar = tqdm(range(0, len(df), batch_size), desc=f"Evaluating for {task_name} [Correct: 0 | Format Correct: 0]")
+
+        for i in pbar:
+            batch = df.iloc[i:i+batch_size]
+            batch_correct, batch_format_correct, batch_total = Evaluator.process_batch(batch, model_path=model_path)
+            correct_count += batch_correct
+            format_correct_count += batch_format_correct
+            total_count += batch_total
+
+            pbar.set_description(f"Evaluating for {task_name} [Correct: {correct_count/total_count} | Format Correct: {format_correct_count/total_count}]")
             
-            if baseline:
-                if self_reference.baseline_extract_solution(response) is not None:
-                    format_correct_count += 1
-            else: 
-                if self_reference.extract_solution(response) is not None:
-                    format_correct_count += 1
-
-            score = compute_score_fn(solution_str=response, ground_truth=ground_truth)
-
-            if score == 1.0:
-                correct_count += 1
-            total_count += 1
-
-        # return accuracy
         return correct_count / total_count, format_correct_count / total_count
     
 
