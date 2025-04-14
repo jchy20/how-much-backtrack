@@ -29,4 +29,4 @@ trainer.save_freq=100 \
 trainer.test_freq=100 \
 trainer.project_name=TinyZero \
 trainer.experiment_name=$EXPERIMENT_NAME \
-trainer.total_epochs=15 2>&1 | tee ${EXPERIMENT_NAME}_qwen3b_base.log
+trainer.total_epochs=15 2>&1 | tee ${EXPERIMENT_NAME}.log
