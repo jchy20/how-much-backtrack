@@ -1,0 +1,1 @@
+def process_inputs(query: str, context: str) -> str:

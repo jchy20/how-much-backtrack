@@ -125,4 +125,6 @@ qwen-3b
 #eval output
 eval/3b-inst-eval/
 eval/3b-inst-rl-baseline/
-eval/3b-rl-eval/
+eval/expr1-3b-rl-from-inst/
+eval/expr2-3b-rl-from-sft/
+eval/expr2-3b-sft/
