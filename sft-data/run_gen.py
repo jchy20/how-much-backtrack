@@ -28,6 +28,10 @@ parser.add_argument("--batch_size", type=int, default=32,
                   help="Number of examples to process in a single batch")
 parser.add_argument("--n", type=int, default=1,
                   help="Number of completions to generate")
+parser.add_argument("--job_id", type=int, default=None,
+                  help="Job ID")
+parser.add_argument("--total_splits", type=int, default=None,
+                  help="Total splits")
 args = parser.parse_args()
 
 model_path = args.model_path
@@ -40,6 +44,8 @@ save_interval = args.save_interval
 use_together = args.use_together
 batch_size = args.batch_size
 n = args.n
+job_id = args.job_id
+total_splits = args.total_splits
 
 if use_together:
     client = OpenAI(
@@ -96,24 +102,27 @@ class Generator:
             return [[] for _ in range(len(prompts))]
     
     @staticmethod
-    def save_data(correct_rows, incorrect_rows, model_type, task_name, output_dir, checkpoint=False, processed_count=None):
+    def save_data(correct_rows, incorrect_rows, incorrect_format_rows, model_type, task_name, output_dir, job_id, checkpoint=False, processed_count=None):
         """Save the collected data to parquet files."""
         correct_parquet = pd.DataFrame(correct_rows)
         incorrect_parquet = pd.DataFrame(incorrect_rows)
+        incorrect_format_parquet = pd.DataFrame(incorrect_format_rows)
 
-        correct_dir = os.path.join(output_dir, model_type, "correct")
-        incorrect_dir = os.path.join(output_dir, model_type, "incorrect")
+        correct_dir = os.path.join(output_dir, "correct")
+        incorrect_dir = os.path.join(output_dir, "incorrect")
+        incorrect_format_dir = os.path.join(output_dir, "incorrect_format")
 
         os.makedirs(correct_dir, exist_ok=True)
         os.makedirs(incorrect_dir, exist_ok=True)
+        os.makedirs(incorrect_format_dir, exist_ok=True)
 
-        filename = f'{task_name}'
+        filename = f'{task_name}_{job_id}'
         if checkpoint:
             if processed_count is not None:
-                filename = f'{task_name}_checkpoint_{processed_count}'
+                filename = f'{task_name}_{job_id}_checkpoint_{processed_count}'
             else:
                 timestamp = int(time.time())
-                filename = f'{task_name}_checkpoint_{timestamp}'
+                filename = f'{task_name}_{job_id}_checkpoint_{timestamp}'
         
         if not correct_parquet.empty:
             correct_parquet.to_parquet(os.path.join(correct_dir, f'{filename}.parquet'))
@@ -121,7 +130,10 @@ class Generator:
         if not incorrect_parquet.empty:
             incorrect_parquet.to_parquet(os.path.join(incorrect_dir, f'{filename}.parquet'))
             print(f"Saved {len(incorrect_parquet)} incorrect samples to {os.path.join(incorrect_dir, f'{filename}.parquet')}")
-    
+        if not incorrect_format_parquet.empty:
+            incorrect_format_parquet.to_parquet(os.path.join(incorrect_format_dir, f'{filename}.parquet'))
+            print(f"Saved {len(incorrect_format_parquet)} incorrect format samples to {os.path.join(incorrect_format_dir, f'{filename}.parquet')}")
+   
     @staticmethod
     def process_batch(rows, model_path: str = model_path, n: int = n):
         """Process a single example with the API and evaluate the results."""
@@ -138,11 +150,12 @@ class Generator:
         
         if not completions:
             print(f"Skipping sample due to API failure")
-            return [], []
+            return [], [], []
         
         # Process each completion
         correct_rows = []
         incorrect_rows = []
+        incorrect_format_rows = []
         
         for i, completions_group in enumerate(completions):
             ground_truth = ground_truths[i]
@@ -152,8 +165,9 @@ class Generator:
             for j, completion in enumerate(completions_group):
                 prompt_response = prompt + completion
 
-                # Check format correctness
+                # Check format correctness first
                 if self_reference.extract_solution(prompt_response) is None:
+                    incorrect_format_rows.append({'prompt': prompt, 'completion': completion})
                     continue
             
                 # Compute score
@@ -166,16 +180,24 @@ class Generator:
                 else:
                     incorrect_rows.append(new_pair)
         
-        return correct_rows, incorrect_rows
-        
+        return correct_rows, incorrect_rows, incorrect_format_rows
+    
     @staticmethod
-    def generate(dataset_dir: str = eval_dataset_dir, batch_size: int = batch_size, model_type: str = model_type, model_path: str = model_path, n: int = n, task_name: str = task_name, output_dir: str = output_dir, save_interval: int = save_interval):
+    def generate(dataset_dir: str = eval_dataset_dir, batch_size: int = batch_size, model_type: str = model_type, model_path: str = model_path, n: int = n, task_name: str = task_name, output_dir: str = output_dir, save_interval: int = save_interval, total_splits: int = total_splits):
         df = pd.read_parquet(dataset_dir)
+        num_sample = len(df) // total_splits  # Use integer division
+        start_idx = job_id * num_sample
+        end_idx = min((job_id + 1) * num_sample, len(df))  # Ensure we don't exceed DataFrame length
+        df = df.iloc[start_idx:end_idx]
+        
         correct_rows = []
         incorrect_rows = []
+        incorrect_format = []
 
         correct_count = 0
         incorrect_count = 0
+        incorrect_format_count = 0
+
         processed_count = 0
         
         # Create progress bar
@@ -185,11 +207,13 @@ class Generator:
         for i in pbar:
             try:
                 batch = df.iloc[i:i+batch_size]
-                batch_correct_rows, batch_incorrect_rows = Generator.process_batch(batch, model_path=model_path, n=n)
+                batch_correct_rows, batch_incorrect_rows, batch_incorrect_format = Generator.process_batch(batch, model_path=model_path, n=n)
                 correct_rows.extend(batch_correct_rows)
                 incorrect_rows.extend(batch_incorrect_rows)
+                incorrect_format.extend(batch_incorrect_format)
                 correct_count += len(batch_correct_rows)
                 incorrect_count += len(batch_incorrect_rows)
+                incorrect_format_count += len(batch_incorrect_format)
                 processed_count += len(batch)
                 
                 # Update progress bar description with current stats
@@ -197,19 +221,19 @@ class Generator:
                 
                 if processed_count % save_interval == 0:
                     print(f"\nSaving checkpoint after processing {processed_count}/{len(df)} samples...")
-                    Generator.save_data(correct_rows, incorrect_rows, model_type, task_name, output_dir, checkpoint=True, processed_count=processed_count)
+                    Generator.save_data(correct_rows, incorrect_rows, incorrect_format, model_type, task_name, output_dir, checkpoint=True, processed_count=processed_count)
                     print("Checkpoint saved.")
             except Exception as e:
                 print(f"Error processing batch: {e}")
                 continue
 
         # Final save at the end
-        Generator.save_data(correct_rows, incorrect_rows, model_type, task_name, output_dir)
+        Generator.save_data(correct_rows, incorrect_rows, incorrect_format, model_type, task_name, output_dir)
 
         # return counts
-        return correct_count, incorrect_count
+        return correct_count, incorrect_count, incorrect_format_count
     
 
 if __name__ == "__main__":
-    correct_count, incorrect_count = Generator.generate()
-    print(f"Correct trajectories for {task_name} is: {correct_count}. Incorrect trajectories is: {incorrect_count}")
+    correct_count, incorrect_count, incorrect_format_count = Generator.generate()
+    print(f"Correct trajectories for {task_name} is: {correct_count}. Incorrect trajectories is: {incorrect_count}. Incorrect format is: {incorrect_format_count}")
