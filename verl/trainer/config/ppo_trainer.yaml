@@ -157,4 +157,4 @@ trainer:
   test_freq: -1
   critic_warmup: 0
   default_hdfs_dir: ~/experiments/gsm8k/ppo/${trainer.experiment_name}
-  default_local_dir: /usr/xtmp/hc387/TinyZero/qwen-3b/${trainer.project_name}/${trainer.experiment_name}
+  default_local_dir: checkpoints/${trainer.project_name}/${trainer.experiment_name}
