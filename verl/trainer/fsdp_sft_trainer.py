@@ -322,6 +322,7 @@ class FSDPSFTTrainer(object):
                                 default_backend=self.config.trainer.logger)
 
         global_step = 0
+        checkpoint_interval = self.config.trainer.get('checkpoint_interval', None)
 
         # TODO (zhangchi.usc1992) add back checkpoint manager. Currently, it blocks when uploading to hdfs. So very slow.
 
@@ -333,6 +334,10 @@ class FSDPSFTTrainer(object):
                 if rank == 0:
                     tracking.log(data=metric, step=global_step)
                 global_step += 1
+
+                # Save checkpoint based on interval if specified
+                if checkpoint_interval and global_step % checkpoint_interval == 0:
+                    self.save_checkpoint(step=global_step)
 
             # validation
             val_losses = []
@@ -346,7 +351,7 @@ class FSDPSFTTrainer(object):
                 tracking.log(data=metric, step=global_step)
             torch.distributed.barrier()
 
-            # save checkpoint
+            # Always save checkpoint at the end of each epoch
             self.save_checkpoint(step=global_step)
 
 

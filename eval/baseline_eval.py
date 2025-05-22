@@ -45,7 +45,7 @@ class Evaluator:
         chat_response = client.completions.create(
             model=model_path,
             prompt=prompts,
-            max_tokens=4096,
+            max_tokens=8192,
             # n = 5,
         )
         completions = []

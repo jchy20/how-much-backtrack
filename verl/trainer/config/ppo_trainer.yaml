@@ -143,7 +143,7 @@ algorithm:
   kl_penalty: kl  # how to estimate kl divergence
   kl_ctrl:
     type: fixed
-    kl_coef: 0.001
+    kl_coef: 0.00
 
 trainer:
   total_epochs: 30

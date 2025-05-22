@@ -1,0 +1,84 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "reasoning_gym"
+version = "0.1.12"
+authors = [
+  { name = "Open-Thought community", email = "andreas.koepf@xamla.com" },
+]
+description = "A library of procedural dataset generators for training reasoning models"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "bfi==1.0.4",
+  "cellpylib==2.4.0",
+  "sympy>=1.13.1",
+  "magiccube==0.3.0",
+  "pycosat==0.6.6",
+  "pyfiglet==1.0.2",
+  "pytz>=2024.1",
+  "tabulate==0.9.0",
+  "pyyaml>=6.0.2",
+  "arckit==0.1.0",
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+]
+license = "Apache-2.0"
+license-files = ["LICENSE*"]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "httpx>=0.27.0"
+]
+server = [
+    "fastapi>=0.109.0",
+    "uvicorn>=0.27.0",
+    "pydantic-settings>=2.1.0",
+]
+cli = [
+    "typer>=0.9.0",
+    "rich>=13.7.0",
+    "pyyaml>=6.0.1",
+    "httpx>=0.27.0",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/open-thought/reasoning-gym"
+"Bug Tracker" = "https://github.com/open-thought/reasoning-gym/issues"
+
+
+[tool.hatch.build]
+packages = [
+    "reasoning_gym",
+    "tools.cli.rgc"
+]
+include = [
+    "reasoning_gym/**/*.py",
+    "reasoning_gym/**/*.txt",
+    "reasoning_gym/**/levels/*",
+    "tools/cli/rgc/**/*.py"
+]
+
+[project.scripts]
+rgc = "tools.cli.rgc.main:main"
+
+[tool.black]
+line-length = 120
+target-version = ['py312']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 120
+
+[tool.pytest.ini_options]
+addopts = "-ra -q"
+testpaths = ["tests"]

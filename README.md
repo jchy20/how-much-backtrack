@@ -1,8 +1,21 @@
-# TinyZero w/ Reasoning Gym
+# How Much Backtracking is Enough? Exploring the Interplay of SFT and RL in Enhancing LLM Reasoning
+
+This repository is based on [TinyZero](https://github.com/Jiayi-Pan/TinyZero), which is a reproduction of [DeepSeek R1 Zero](https://github.com/deepseek-ai/DeepSeek-R1) in countdown built upon [veRL](https://github.com/volcengine/verl).
+
+Dataset generation is based on [Reasoning-Gym](https://github.com/open-thought/reasoning-gym).
 
 
 ## Installation
+Due to a mismatch in python versions, it is recommended to install to two encironments: one for reasoning gym and the other one for training.
 
+### For dataset 
+requires Python >= 3.11.
+```
+conda create -n reason-gym python=3.11
+pip install reasoning-gym 
+```
+
+### For training
 ```
 conda create -n zero python=3.9
 # install torch [or you can skip this step and let vllm to install the correct version for you]
@@ -41,11 +54,4 @@ Currently supports tasks __Leg-Counting__, __Advanced-Geometry__, __Arc-1d__, __
 
 ## Citation
 ```
-@misc{tinyzero,
-author       = {Jiayi Pan and Junjie Zhang and Xingyao Wang and Lifan Yuan and Hao Peng and Alane Suhr},
-title        = {TinyZero},
-howpublished = {https://github.com/Jiayi-Pan/TinyZero},
-note         = {Accessed: 2025-01-24},
-year         = {2025}
-}
 ```

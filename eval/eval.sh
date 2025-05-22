@@ -3,15 +3,15 @@
 #SBATCH --nodes=1
 #SBATCH --time=7-00:00:00
 #SBATCH --gres=gpu:a5000:4
-#SBATCH --mem=200G
-#SBATCH --cpus-per-task=10
-#SBATCH --job-name=qwen3b-inst_zebra_puzzles_sft1834_incorrect
-#SBATCH --output=slurm_logs/qwen3b-inst_zebra_puzzles_sft1834_incorrect.out
+#SBATCH --mem=100G
+#SBATCH --cpus-per-task=6
+#SBATCH --job-name=countdown_from_qwen3binst_sft161_from_qwq32b_incorrect_format_attempt3
+#SBATCH --output=slurm_logs/countdown_from_qwen3binst_sft161_from_qwq32b_incorrect_format_attempt3.out
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate zero
 
-zsh -l -c '
+
 # Whether we are running baseline or not
 baseline=False
 
@@ -26,12 +26,26 @@ list_functions_path="/home/users/hc387/data/list_functions/test.parquet"
 self_reference_path="/home/users/hc387/data/self_reference/test.parquet"
 
 # Define model and which dataset
-eval_data="qwen3b-inst_zebra_puzzles_sft1834_incorrect"
+eval_data="countdown_from_qwen3binst_sft161_from_qwq32b_incorrect_format_attempt3"
 
 mkdir -p ${eval_data}
 
-model_dir="/usr/xtmp/hc387/TinyZero/qwen-3b/SFT_Cold-Start/qwen3b-inst_zebra_puzzles_incorrect/global_step_1834"
-port=8001
+# model_dirs = [
+#     "/usr/xtmp/hc387/TinyZero/qwen-3b/TinyZero/countdown_from_qwen3binst_sft300_from_synthetic_3_backtrack_chain/actor/global_step_300",
+#     "/usr/xtmp/hc387/TinyZero/qwen-3b/TinyZero/countdown_from_qwen3binst_sft300_from_synthetic_2_backtrack_chain/actor/global_step_300",
+#     "/usr/xtmp/hc387/TinyZero/qwen-3b/TinyZero/countdown_from_qwen3binst_sft300_from_synthetic_1_backtrack_chain/actor/global_step_300",
+#     "/usr/xtmp/jw834/TinyZero/qwen-3b/TinyZero/countdown_from_qwen3binst_sft300_from_synthetic_optim_chain/actor/global_step_300",
+#     "/usr/xtmp/jw834/TinyZero/qwen-3b/TinyZero/arc_1d_from_qwen3binst_sft300_from_synthetic_1_backtrack/actor/global_step_100",
+#     "/usr/xtmp/jw834/TinyZero/qwen-3b/TinyZero/arc_1d_from_qwen3binst_sft300_from_synthetic_optimal/actor/global_step_100",
+#     "/usr/xtmp/hc387/TinyZero/qwen-3b/TinyZero/arc_1d_from_qwen3binst_sft300_from_synthetic_2_backtrack/actor/global_step_100",
+#     "/usr/xtmp/hc387/TinyZero/qwen-3b/TinyZero/arc_1d_from_qwen3binst_sft300_from_synthetic_3_backtrack/actor/global_step_100",
+#     "/usr/xtmp/jw834/TinyZero/qwen-3b/TinyZero/sudoku_from_qwen3binst_sft300_from_synthetic_optimal/actor/global_step_200",
+#     "/usr/xtmp/jw834/TinyZero/qwen-3b/TinyZero/sudoku_from_qwen3binst_sft300_from_5_backtrack/actor/global_step_200"
+
+# ]
+
+model_dir="/usr/xtmp/jw834/TinyZero/qwen-3b/TinyZero/countdown_from_qwen3binst_sft161_from_qwq32b_incorrect_format_attempt3/actor/global_step_100"
+port=8002
 
 # Start the API server
 python -m vllm.entrypoints.openai.api_server \
@@ -145,4 +159,3 @@ done
 
 echo "Shutting down API server..."
 kill $API_PID
-'

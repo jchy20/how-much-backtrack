@@ -35,3 +35,4 @@ trainer:
   total_epochs: 4
   logger: ['console']
   seed: 1
+  checkpoint_interval: null  # Set to null to disable, or specify number of steps

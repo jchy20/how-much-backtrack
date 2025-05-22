@@ -88,7 +88,7 @@ class Generator:
             chat_response = client.completions.create(
                 model=model_path,
                 prompt=prompts,
-                max_tokens=4096,
+                max_tokens=8192,
                 n = n,
             )
             grouped_completions = [[] for _ in range(len(prompts))]
@@ -221,14 +221,14 @@ class Generator:
                 
                 if processed_count % save_interval == 0:
                     print(f"\nSaving checkpoint after processing {processed_count}/{len(df)} samples...")
-                    Generator.save_data(correct_rows, incorrect_rows, incorrect_format, model_type, task_name, output_dir, checkpoint=True, processed_count=processed_count)
+                    Generator.save_data(correct_rows, incorrect_rows, incorrect_format, model_type, task_name, output_dir, job_id, checkpoint=True, processed_count=processed_count)
                     print("Checkpoint saved.")
             except Exception as e:
                 print(f"Error processing batch: {e}")
                 continue
 
         # Final save at the end
-        Generator.save_data(correct_rows, incorrect_rows, incorrect_format, model_type, task_name, output_dir)
+        Generator.save_data(correct_rows, incorrect_rows, incorrect_format, model_type, task_name, output_dir, job_id)
 
         # return counts
         return correct_count, incorrect_count, incorrect_format_count

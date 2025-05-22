@@ -4,17 +4,17 @@
 #SBATCH --time=14-00:00:00
 #SBATCH --gres=gpu:a5000:4
 #SBATCH --mem=100G
-#SBATCH --cpus-per-task=10
-#SBATCH --job-name=QwQ32B-sft-generation-arc_1d
-#SBATCH --array=0-79%4
-#SBATCH --output=slurm_logs/QwQ32B-sft-generation-arc_1d.out
+#SBATCH --cpus-per-task=3
+#SBATCH --job-name=QwQ32B-sft-generation-advanced_geometry
+#SBATCH --array=0-479%10
+#SBATCH --output=slurm_logs/QwQ32B-sft-generation-advanced_geometry.out
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate zero
 
 ### Config
-DATASET_PATH="/home/users/hc387/data/arc_1d/qwen-instruct_sft.parquet"
-TASK="arc_1d"
+DATASET_PATH="/home/users/hc387/data/advanced_geometry/qwen-instruct_sft.parquet"
+TASK="advanced_geometry"
 JOB_ID=$SLURM_ARRAY_TASK_ID
 MODEL_PATH="Qwen/QwQ-32B"
 MODEL_TYPE="QwQ-32B"
@@ -24,7 +24,14 @@ SAVE_INTERVAL=20000                                     # save interval
 BATCH_SIZE=8                                            # batch size for generation
 N=1                                                     # number of samples to generate
 PORT=$((BASE_PORT + JOB_ID))                            # port number for the API server
-TOTAL_SPLITS=80                                         # number of splits
+TOTAL_SPLITS=480                                         # number of splits
+
+# Set job-specific cache directories
+export OUTLINES_CACHE="/home/users/hc387/.cache/outlines_${JOB_ID}"
+
+# Create cache directories
+rm -rf ${OUTLINES_CACHE}  # Clear any existing cache
+mkdir -p ${OUTLINES_CACHE}
 
 mkdir -p ${MODEL_TYPE}
 
@@ -72,3 +79,6 @@ echo ""
 
 echo "Shutting down API server..."
 kill $API_PID
+
+# Clean up cache directories
+rm -rf ${OUTLINES_CACHE}

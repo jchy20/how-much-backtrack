@@ -5,8 +5,8 @@
 #SBATCH --gres=gpu:a6000:4
 #SBATCH --mem=400G
 #SBATCH --cpus-per-task=10
-#SBATCH --job-name=zebra_puzzles_from_qwen3binst_sft1834_incorrect
-#SBATCH --output=slurm_logs/zebra_puzzles_from_qwen3binst_sft1834_incorrect.out
+#SBATCH --job-name=advanced_geometry_from_qwen3binst_sft300_from_sudoku_synthetic_1_backtrack
+#SBATCH --output=slurm_logs/advanced_geometry_from_qwen3binst_sft300_from_sudoku_synthetic_1_backtrack.out
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate zero
@@ -14,12 +14,14 @@ conda activate zero
 zsh -l -c '
 # Set environment variables
 export N_GPUS=4
-export BASE_MODEL=/usr/xtmp/hc387/TinyZero/qwen-3b/SFT_Cold-Start/qwen3b-inst_zebra_puzzles_incorrect/global_step_1834
-export DATA_DIR=/home/users/hc387/data/zebra_puzzles
-export ROLLOUT_TP_SIZE=2
-export EXPERIMENT_NAME=zebra_puzzles_from_qwen3binst_sft1834_incorrect
+export BASE_MODEL=/usr/xtmp/jw834/saved/rl-reasoning/qwen-3b/SFT_Cold-Start/qwen3b-inst_from_sudoku_synthetic_1_backtrack/global_step_300
+export DATA_DIR=/home/users/hc387/data/advanced_geometry
+export ROLLOUT_TP_SIZE=4
+export EXPERIMENT_NAME=advanced_geometry_from_qwen3binst_sft300_from_sudoku_synthetic_1_backtrack
 export VLLM_ATTENTION_BACKEND=XFORMERS
+export MICRO_BATCH_SIZE=4
+export MAX_RESPONSE_LENGTH=4096
 
 # Run the training script
-bash train_tiny_zero.sh 
+bash grpo.sh
 '

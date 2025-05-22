@@ -128,3 +128,4 @@ eval/3b-inst-rl-baseline/
 eval/expr1-3b-rl-from-inst/
 eval/expr2-3b-rl-from-sft/
 eval/expr2-3b-sft/
+sft-data/slurm_logs_zebra_puzzles/
