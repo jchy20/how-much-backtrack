@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import random
 from random import Random
 from typing import Any, Optional
 
@@ -17,6 +18,71 @@ Final answer format instructions:
 5. Do not include any other text or formatting.
 """
 
+def create_backtrack_trajectory(ex_correct_steps, ex_error_steps, ex_error_value, ex_error_recovery, ex_reasoning_trajectory, ex_reasoning_final_answer, num_backtracks):
+    """
+    Create a trajectory with the specified number of backtracks.
+    
+    Args:
+        example: The example to process
+        num_backtracks: Number of backtracks to inject (1, 2, or 3)
+        
+    Returns:
+        A string containing the trajectory with backtracks
+    """
+    # Extract the correct steps and error paths
+    correct_steps = ex_correct_steps
+    # correct_steps = correct_steps.tolist()
+    
+    # Extract error paths
+    error_paths = []
+    for i in range(1, 4):
+        steps = ex_error_steps
+        value = ex_error_value
+        recovery = ex_error_recovery
+        if steps is not None and len(steps) > 0:
+            error_paths.append((steps, value, recovery))
+    
+    # If we don't have enough error paths, return the original trajectory
+    if len(error_paths) < num_backtracks:
+        return "Let's think step by step. " + ex_reasoning_trajectory + "This matches the problem statement. This is the solution.\n</think>\n\n<answer>" + ex_reasoning_final_answer + "</answer>"
+    
+    # Randomly select error paths
+    selected_paths = random.sample(error_paths, num_backtracks)
+    
+    # Sort by recovery step to ensure correct order
+    selected_paths.sort(key=lambda x: x[2])
+    
+    curr_incorrect_steps = 0
+    curr_correct_steps = 0
+
+
+    trajectory = ""
+    for i, (error_steps, error_value, recovery_step) in enumerate(selected_paths):
+
+        # error_steps = error_steps.tolist()
+
+        # Add correct steps up to first error step
+        for correct_step_idx in range(curr_correct_steps, recovery_step+1):
+            curr_correct_steps += 1
+            trajectory += f"Step {curr_correct_steps}: {correct_steps[correct_step_idx]}. "
+
+        curr_incorrect_steps = curr_correct_steps
+        
+        # Add error steps
+        for error_step_idx in range(recovery_step+1, len(error_steps)):
+            curr_incorrect_steps += 1
+            trajectory += f"Step {curr_incorrect_steps}: {error_steps[error_step_idx]}. "
+
+        if curr_correct_steps == 0:
+            trajectory += f"Wait, this doesn't lead to the correct solution. Let me restart.\n"
+        else:
+            trajectory += f"Wait, this doesn't lead to the correct solution. {error_value} is not the correct answer. Let me go back to step {curr_correct_steps} and keep thinking from there.\n"
+    
+    for i in range(curr_correct_steps, len(correct_steps)):
+        trajectory += f"Step {i+1}: {correct_steps[i]}. "
+        
+    trajectory += "This matches the problem statement. This is the solution.\n</think>\n\n<answer>" + ex_reasoning_final_answer + "</answer>"
+    return trajectory
 
 @dataclass
 class CountdownConfig:
@@ -90,6 +156,20 @@ class CountdownDataset(ProceduralDataset):
         if self.config.include_error_paths and rng.random() < self.config.error_path_probability:
             error_paths = self._generate_multiple_error_paths(rng, steps, numbers, target)
 
+        error_path_1_steps = error_paths[0][0] if len(error_paths) > 0 else None
+        error_path_1_value = error_paths[0][1] if len(error_paths) > 0 else None
+        error_path_1_recovery = error_paths[0][2] if len(error_paths) > 0 else None
+        error_path_2_steps = error_paths[1][0] if len(error_paths) > 1 else None
+        error_path_2_value = error_paths[1][1] if len(error_paths) > 1 else None
+        error_path_2_recovery = error_paths[1][2] if len(error_paths) > 1 else None
+        error_path_3_steps = error_paths[2][0] if len(error_paths) > 2 else None
+        error_path_3_value = error_paths[2][1] if len(error_paths) > 2 else None
+        error_path_3_recovery = error_paths[2][2] if len(error_paths) > 2 else None
+
+        reasoning_trajectory = ""
+        for i, step in enumerate(steps):
+            reasoning_trajectory += f"Step {i+1}: {step}. "
+
         return {
             "question": QUESTION_FORMAT_TEMPLATE.format(question=question),
             "answer": expression,
@@ -99,7 +179,11 @@ class CountdownDataset(ProceduralDataset):
                 "expression": expression,
                 "steps": steps,
                 "combined_solution": formatted_expression,
-                "error_paths": error_paths
+                "one_backtrack": create_backtrack_trajectory(steps, error_path_1_steps, error_path_1_value, error_path_1_recovery, reasoning_trajectory, formatted_expression, 1),
+                "two_backtrack": create_backtrack_trajectory(steps, error_path_2_steps, error_path_2_value, error_path_2_recovery, reasoning_trajectory, formatted_expression, 2),
+                "three_backtrack": create_backtrack_trajectory(steps, error_path_3_steps, error_path_3_value, error_path_3_recovery, reasoning_trajectory, formatted_expression, 3),
+                "optimal_trajectory": reasoning_trajectory
+
             },
         }
 

@@ -35,18 +35,93 @@ pip install wandb IPython matplotlib
 
 ## Reasoning-Gym Datasets
 
+Currently supports tasks __advanced_geometry__, __countdown__, __arc_1d__, __sudoku__, (the first four has backtrack sft dataset), __color_cube_rotation__, __zebra_puzzles__, __list_functions__, and __self_reference__.
+
+
 **Data Preparation**
 ```
-conda activate zero
-python ./examples/data_preprocess/reasoning-gym/{task_name}.py \
---local_dir {path_to_your_dataset} \
---dataset_name {dataset_name} \
---train_size {size_of_training} \
---val_size {size_of_validation} \
---task_types {task_types} \
---seed {set_seed}
+conda activate reason-gym
+cd reasoning-gym
+python3 countdown.py \
+--sft_size=8000 \
+--template_type=qwen-instruct \
+--local_dir=~/data/countdown
 ```
-Currently supports tasks __Leg-Counting__, __Advanced-Geometry__, __Arc-1d__, __Base-Conversion__, __Caesar-Cipher__
+
+**Config Explanation** 
+
+- Use the exact name of the task listed above to generate corresponding dataset, the naming of the python file follows `task_name.py`
+- `train_size`, `val_size`, `test_size`, `sft_size` has different seed and file name presets. Choose only one of the above to specify the size of the dataset.
+- `template_type` has `base`, `qwen-instruct`, and `baseline`. Use `base` for base models.
+- For other task specific arguments, please see `how-much-backtrack/reasoning-gym/GALLERY.md` for corresponding task
+
+## RL training 
+```
+cd rl-scripts
+
+export N_GPUS=4
+export BASE_MODEL=path-to-your-model
+export DATA_DIR=path-to-your-dataset
+export ROLLOUT_TP_SIZE=4
+export EXPERIMENT_NAME=your-wandb-experiment-name
+export VLLM_ATTENTION_BACKEND=XFORMERS
+export MICRO_BATCH_SIZE=4
+export MAX_RESPONSE_LENGTH=4096
+
+# Run the training script
+bash grpo.sh
+```
+
+To run training with GRPO algorithm, refer to the config in `grpo.sh`. To run training with PPO algorithm, refer to the config in `train_tiny_zero.sh`. To make further change, refer to the config in `how-much-backtrack/verl/trainer/config/ppo_trainer.yaml`
+
+## SFT training
+```
+cd sft-scripts
+
+export N_GPUS=4
+export BASE_MODEL=path-to-your-model
+export TRAIN_DATA_DIR=path-to-your-training-dataset
+export VAL_DATA_DIR=path-to-your-validation-dataset
+export PROMPT_KEY=prompt
+export RESPONSE_KEY=completion
+export MICRO_BATCH_SIZE=4
+export MAX_LENGTH=6000
+export PROJECT_NAME=your-wandb-project-name
+export EXPERIMENT_NAME=your-wandb-experiment-name
+export nproc_per_node=4
+
+# Run the training script
+bash train_sft.sh 
+```
+
+To change specific configs, please refer to `train_sft.sh` and `how-much-backtrack/verl/trainer/config/sft_trainer.yaml`.
+
+## SFT Data Generation
+**Set up vllm serving first**
+```
+python -m vllm.entrypoints.openai.api_server \
+    --model /path-to-your-model \
+    --tensor-parallel-size 4 \
+    --host 0.0.0.0 \
+    --port 8000
+```
+**Run generation**
+```
+cd sft-data
+
+python run_gen.py \
+    --model_path /path-to-your-model \
+    --model_type qwen-instruct \
+    --eval_dataset_dir /path-to-your-dataset \
+    --task_name countdown \
+    --output_dir /path-to-generated-dataset \
+    --batch_size 8 \
+    --n 1 \
+    --save_interval 10000 \
+    --port 8000
+```
+
+
 
 ## Acknowledge
 * We run our experiments based on [veRL](https://github.com/volcengine/verl).

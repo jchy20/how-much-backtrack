@@ -21,7 +21,6 @@ import datasets
 import argparse
 import reasoning_gym
 
-
 def make_prefix(dp, template_type):
     question = dp['question']
     # NOTE: also need to change reward_score/countdown.py
@@ -125,13 +124,7 @@ if __name__ == '__main__':
         def process_fn(example, idx):
             question = make_prefix(example, template_type=args.template_type)
             solution = example['answer']
-            reasoning = example['metadata']['combined_solution']
-            correct_step = example['metadata']['steps']
-            error_step = example['metadata']['error_paths']
-            reasoning_trajectory = ''
-            for i, step in enumerate(example['metadata']['steps']):
-                reasoning_trajectory += f"Step {i+1}: {step}. "
-
+            
             data = {
                 "data_source": "countdown",
                 "prompt": [{
@@ -142,18 +135,10 @@ if __name__ == '__main__':
                 "reward_model": {
                     "style": "rule",
                     "ground_truth": solution,
-                    "reasoning_final_answer": reasoning,
-                    "reasoning_trajectory": reasoning_trajectory,
-                    "correct_step": correct_step,
-                    "error_path_1_steps": error_step[0][0] if len(error_step) > 0 else None,
-                    "error_path_1_value": error_step[0][1] if len(error_step) > 0 else None,
-                    "error_path_1_recovery": error_step[0][2] if len(error_step) > 0 else None,
-                    "error_path_2_steps": error_step[1][0] if len(error_step) > 1 else None,
-                    "error_path_2_value": error_step[1][1] if len(error_step) > 1 else None,
-                    "error_path_2_recovery": error_step[1][2] if len(error_step) > 1 else None,
-                    "error_path_3_steps": error_step[2][0] if len(error_step) > 2 else None,
-                    "error_path_3_value": error_step[2][1] if len(error_step) > 2 else None,
-                    "error_path_3_recovery": error_step[2][2] if len(error_step) > 2 else None
+                    "one_backtrack": example['metadata']['one_backtrack'],
+                    "two_backtrack": example['metadata']['two_backtrack'],
+                    "three_backtrack": example['metadata']['three_backtrack'],
+                    "optimal_trajectory": example['metadata']['optimal_trajectory']
                 },
                 "extra_info": {
                     'split': split,
