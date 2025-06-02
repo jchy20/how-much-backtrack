@@ -129,4 +129,13 @@ python run_gen.py \
 
 ## Citation
 ```
+@misc{cai2025backtrackingenoughexploringinterplay,
+      title={How Much Backtracking is Enough? Exploring the Interplay of SFT and RL in Enhancing LLM Reasoning}, 
+      author={Hongyi James Cai and Junlin Wang and Xiaoyin Chen and Bhuwan Dhingra},
+      year={2025},
+      eprint={2505.24273},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2505.24273}, 
+}
 ```
