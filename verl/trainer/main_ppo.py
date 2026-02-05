@@ -110,13 +110,18 @@ class RewardManager():
 
 import ray
 import hydra
+from omegaconf import OmegaConf
 
 
 @hydra.main(config_path='config', config_name='ppo_trainer', version_base=None)
 def main(config):
     if not ray.is_initialized():
         # this is for local ray cluster
-        ray.init(runtime_env={'env_vars': {'TOKENIZERS_PARALLELISM': 'true', 'NCCL_DEBUG': 'WARN'}})
+        runtime_env = OmegaConf.to_container(config.ray_init.runtime_env, resolve=True) if config.ray_init.runtime_env is not None else None
+        ray.init(
+            runtime_env=runtime_env,
+            num_cpus=config.ray_init.num_cpus,
+        )
 
     ray.get(main_task.remote(config))
 

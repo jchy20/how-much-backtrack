@@ -11,6 +11,14 @@ data:
   return_raw_chat: False
   truncation: 'error'
 
+ray_init:
+  num_cpus: null
+  runtime_env:
+    env_vars:
+      TOKENIZERS_PARALLELISM: 'true'
+      NCCL_DEBUG: 'WARN'
+      VLLM_LOGGING_LEVEL: 'WARN'
+
 actor_rollout_ref:
   hybrid_engine: True
   model:

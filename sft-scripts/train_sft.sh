@@ -14,5 +14,5 @@ torchrun --standalone --nnodes=1 --nproc_per_node=$nproc_per_node \
     trainer.default_hdfs_dir=null \
     trainer.project_name=$PROJECT_NAME \
     trainer.experiment_name=$EXPERIMENT_NAME \
-    +trainer.checkpoint_interval=20 \
-    trainer.default_local_dir=/usr/xtmp/hc387/TinyZero/qwen-3b/${PROJECT_NAME}/${EXPERIMENT_NAME} 2>&1 | tee ${PROJECT_NAME}_${EXPERIMENT_NAME}.log
+    +trainer.checkpoint_interval=100 \
+    trainer.default_local_dir=/work/hc387/TinyZero/qwen-3b/${PROJECT_NAME}/${EXPERIMENT_NAME}

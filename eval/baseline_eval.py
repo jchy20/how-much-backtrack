@@ -1,6 +1,7 @@
 from openai import OpenAI
 import pandas as pd
 import argparse
+import os
 from verl.utils.reward_score import multiply, countdown, advanced_geometry, arc_1d, sudoku, color_cube_rotation, zebra_puzzles, list_functions, self_reference
 from tqdm import tqdm
 
@@ -17,6 +18,8 @@ parser.add_argument("--baseline", type=lambda x: x.lower() == 'true', default=Fa
                   help="Whether to use baseline evaluation")
 parser.add_argument("--batch_size", type=int, default=16,
                   help="Batch size for evaluation")
+parser.add_argument("--output_dir", type=str, default=".",
+                  help="Directory to store evaluation artifacts")
 args = parser.parse_args()
 
 model_path = args.model_path
@@ -25,6 +28,7 @@ port = args.port
 task_name = args.task_name
 baseline = args.baseline
 batch_size = args.batch_size
+output_dir = args.output_dir
 
 class Evaluator:
     @staticmethod
@@ -112,6 +116,7 @@ class Evaluator:
         prompts = []
         ground_truths = []
         data_sources = []
+        records = []
         for i in range(len(rows)):
             prompts.append(rows.iloc[i]['prompt'][0]['content'])
             ground_truths.append(rows.iloc[i]['reward_model']['ground_truth'])
@@ -126,12 +131,24 @@ class Evaluator:
         for i, completion in enumerate(completions):
             ground_truth = ground_truths[i]
             compute_score_fn = Evaluator._select_rm_score_fn(data_sources[i], baseline=baseline)
-            if self_reference.extract_solution(completion) is not None:
+            is_format_correct = self_reference.extract_solution(completion) is not None
+            is_correct = compute_score_fn(completion, ground_truth) == 1.0
+
+            if is_format_correct:
                 format_correct_count += 1
-            if compute_score_fn(completion, ground_truth) == 1.0:
+            if is_correct:
                 correct_count += 1
+
+            records.append({
+                "prompt": prompts[i],
+                "completion": completions[i],
+                "ground_truth": ground_truth,
+                "data_source": data_sources[i],
+                "is_correct": is_correct,
+                "is_format_correct": is_format_correct,
+            })
         
-        return correct_count, format_correct_count, total_count
+        return correct_count, format_correct_count, total_count, records
 
     @staticmethod
     def evaluate(dataset_dir: str = eval_dataset_dir, baseline: bool = baseline, batch_size: int = batch_size):
@@ -139,23 +156,36 @@ class Evaluator:
         correct_count = 0
         format_correct_count = 0
         total_count = 0
+        all_records = []
 
         pbar = tqdm(range(0, len(df), batch_size), desc=f"Evaluating for {task_name} [Correct: 0 | Format Correct: 0]")
 
         for i in pbar:
             batch = df.iloc[i:i+batch_size]
-            batch_correct, batch_format_correct, batch_total = Evaluator.process_batch(batch, model_path=model_path)
+            batch_correct, batch_format_correct, batch_total, batch_records = Evaluator.process_batch(batch, model_path=model_path)
             correct_count += batch_correct
             format_correct_count += batch_format_correct
             total_count += batch_total
+            all_records.extend(batch_records)
 
             pbar.set_description(f"Evaluating for {task_name} [Correct: {correct_count/total_count} | Format Correct: {format_correct_count/total_count}]")
             
-        return correct_count / total_count, format_correct_count / total_count
+        return correct_count / total_count, format_correct_count / total_count, all_records
     
 
 if __name__ == "__main__":
-    accuracy, format_accuracy = Evaluator.evaluate()
+    accuracy, format_accuracy, all_records = Evaluator.evaluate()
     task_identifier = task_name if task_name else eval_dataset_dir
-    print(f"Task accuracy for {task_identifier} is: {accuracy}. Format accuracy is: {format_accuracy}")
 
+    os.makedirs(output_dir, exist_ok=True)
+    df_records = pd.DataFrame(all_records)
+
+    responses_path = os.path.join(output_dir, "responses.parquet")
+
+    if not df_records.empty:
+        df_records.to_parquet(responses_path, index=False)
+    else:
+        # Write empty files with schema if something went wrong but avoid crashing.
+        pd.DataFrame(columns=["prompt", "completion", "ground_truth", "data_source", "is_correct", "is_format_correct"]).to_parquet(responses_path, index=False)
+
+    print(f"Task accuracy for {task_identifier} is: {accuracy}. Format accuracy is: {format_accuracy}")
