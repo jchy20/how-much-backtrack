@@ -6,12 +6,12 @@
 #SBATCH --mem=100G
 #SBATCH --cpus-per-task=10
 #SBATCH --job-name=train_sft
-#SBATCH --output=sft_log/llama32-3B_sudoku-optimal.out
+#SBATCH --output=sft_log/%x-%j.out
 
-export PYTHONPATH="/hpc/home/hc387/projects/backtrack:$PYTHONPATH"
+export PYTHONPATH="{project source dir}:$PYTHONPATH"
 
-source /hpc/group/szhoulab/hc387/miniconda3/etc/profile.d/conda.sh
-conda activate zero
+source {path to miniconda}/etc/profile.d/conda.sh
+conda activate {environment name}
 
 # on 4xA6000
 # note that when max_length is 2048, need to set MICRO_BATCH_SIZE to 8 or lower
@@ -19,17 +19,17 @@ conda activate zero
 
 zsh -l -c '
 # Set environment variables
-export N_GPUS=2
+export N_GPUS={number of processes, distributed size}
 export BASE_MODEL=meta-llama/Llama-3.2-3B-Instruct
-export TRAIN_DATA_DIR=/hpc/group/szhoulab/hc387/data/backtrack/sudoku/sft_backtrack/qwen-instruct_sft_optim.parquet
-export VAL_DATA_DIR=/hpc/group/szhoulab/hc387/data/backtrack/combined_data.parquet
+export TRAIN_DATA_DIR={data_path}
+export VAL_DATA_DIR=/home/users/hc387/data/sft_data/Qwen3b-instruct/correct/combined_data.parquet
 export PROMPT_KEY=prompt
 export RESPONSE_KEY=completion
-export MICRO_BATCH_SIZE=16
+export MICRO_BATCH_SIZE={4, 8, 16, usually depend on the gpus you are usuing}
 export MAX_LENGTH=8192
 export PROJECT_NAME=SFT_Cold-Start
-export EXPERIMENT_NAME=llama32-3B_sudoku-optimal
-export nproc_per_node=2
+export EXPERIMENT_NAME={experiment name, usually i do model name + data name}
+export nproc_per_node={number of processes, distributed size}
 
 # Run the training script
 bash sft-scripts/train_sft.sh 
